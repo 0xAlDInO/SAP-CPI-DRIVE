@@ -9,7 +9,11 @@ server:
     - name: fiori-tools-proxy
       afterMiddleware: compression
       configuration:
-        ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
+        ignoreCertErrors: true
+        backend:
+          - path: /cpi-api
+            url: https://178020eetrial.it-cpitrial06-rt.cfapps.us10-001.hana.ondemand.com
+            pathReplace: /http/manage/file/gd/v1
         ui5:
           path:
             - /resources
