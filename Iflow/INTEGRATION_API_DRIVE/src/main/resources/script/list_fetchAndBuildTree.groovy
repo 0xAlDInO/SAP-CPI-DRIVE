@@ -6,11 +6,18 @@ def processData(message) {
     def folderId = message.getProperty("startFolderId")
     def searchText = message.getProperty("searchText")
 
-    // ---- Filtre Drive : éléments non supprimés, éventuellement d'un dossier et/ou par nom ----
+    // ---- Filtre Drive : éléments non supprimés, dans le dossier spécifié (ou à la racine 'root') ----
     def esc = { String s -> s.replace("\\", "\\\\").replace("'", "\\'") }
     def q = "trashed=false"
-    if (folderId) { q += " and '" + esc(folderId) + "' in parents" }
-    if (searchText) { q += " and name contains '" + esc(searchText) + "'" }
+    if (folderId) {
+        q += " and '" + esc(folderId) + "' in parents"
+    } else if (!searchText) {
+        // En l'absence de recherche globale et sans folderId, on limite aux éléments de la racine
+        q += " and 'root' in parents"
+    }
+    if (searchText) {
+        q += " and name contains '" + esc(searchText) + "'"
+    }
 
     // ---- Récupération paginée de tous les éléments (aucune limite) ----
     def allFiles = []
