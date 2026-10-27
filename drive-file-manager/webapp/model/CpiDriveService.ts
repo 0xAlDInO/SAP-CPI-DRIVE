@@ -66,6 +66,7 @@ export class CpiDriveService {
     public async downloadFile(fileId: string, fileName?: string): Promise<Blob> {
         const params = new URLSearchParams();
         params.append("fileId", fileId);
+        params.append("raw", "true");
         if (fileName) {
             params.append("fileName", fileName);
         }

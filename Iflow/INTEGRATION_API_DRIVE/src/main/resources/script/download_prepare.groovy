@@ -19,11 +19,15 @@ def processData(message) {
         throw new IllegalArgumentException("Paramètre 'fileId' manquant. Utilisez ?fileId=<id>[&fileName=<nom>]")
     }
     def fileName = readParam("fileName")
+    def raw = readParam("raw")
 
     message.setProperty("fileId", fileId)
     // fileName n'est posé que s'il est fourni : sinon download_resolveFileName le lit dans Drive
     if (fileName) {
         message.setProperty("fileName", fileName)
+    }
+    if (raw) {
+        message.setProperty("isRawDownload", raw)
     }
 
     // Premier appel Drive : lecture des métadonnées (nom, type)
