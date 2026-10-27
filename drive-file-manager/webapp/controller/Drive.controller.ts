@@ -53,10 +53,11 @@ export default class Drive extends Controller {
 
         // Load Initial Data
         this.loadDriveData();
+        this.loadDashboardData();
     }
 
     /**
-     * Load list of files from CPI
+     * Load list of files from CPI for current folder view
      */
     public async loadDriveData(folderId?: string): Promise<void> {
         const driveModel = this.getView()?.getModel("drive") as JSONModel;
@@ -67,14 +68,27 @@ export default class Drive extends Controller {
             const files: DriveFile[] = data.files || [];
 
             driveModel.setProperty("/files", files);
-            driveModel.setProperty("/allFiles", files);
             driveModel.setProperty("/currentFolderId", folderId || "");
-
-            this.updateDashboardStats(files);
         } catch (error: any) {
             MessageBox.error("Erreur de chargement : " + (error.message || error));
         } finally {
             driveModel.setProperty("/busy", false);
+        }
+    }
+
+    /**
+     * Load all files across entire Google Drive for the Dashboard
+     */
+    public async loadDashboardData(): Promise<void> {
+        try {
+            const allData = await this.driveService.listFiles(undefined, undefined, true);
+            const allFiles: DriveFile[] = allData.files || [];
+            const driveModel = this.getView()?.getModel("drive") as JSONModel;
+            driveModel.setProperty("/allFiles", allFiles);
+
+            this.updateDashboardStats(allFiles);
+        } catch (error: any) {
+            // Dashboard load error
         }
     }
 
@@ -168,6 +182,7 @@ export default class Drive extends Controller {
         const driveModel = this.getView()?.getModel("drive") as JSONModel;
         const currentFolderId = driveModel.getProperty("/currentFolderId");
         this.loadDriveData(currentFolderId);
+        this.loadDashboardData();
     }
 
     /**
@@ -177,9 +192,7 @@ export default class Drive extends Controller {
         const params = event.getParameters() as any;
         const key = params?.key;
         if (key === "dashboard") {
-            const driveModel = this.getView()?.getModel("drive") as JSONModel;
-            const allFiles = driveModel.getProperty("/allFiles") || [];
-            this.updateDashboardStats(allFiles);
+            this.loadDashboardData();
         }
     }
 

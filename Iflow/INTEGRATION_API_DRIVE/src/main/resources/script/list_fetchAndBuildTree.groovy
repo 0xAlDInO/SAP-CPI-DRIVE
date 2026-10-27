@@ -5,14 +5,15 @@ def processData(message) {
     def accessToken = message.getProperty("access_token")
     def folderId = message.getProperty("startFolderId")
     def searchText = message.getProperty("searchText")
+    def isAll = message.getProperty("isAll")
 
-    // ---- Filtre Drive : éléments non supprimés, dans le dossier spécifié (ou à la racine 'root') ----
+    // ---- Filtre Drive : éléments non supprimés ----
     def esc = { String s -> s.replace("\\", "\\\\").replace("'", "\\'") }
     def q = "trashed=false"
     if (folderId) {
         q += " and '" + esc(folderId) + "' in parents"
-    } else if (!searchText) {
-        // En l'absence de recherche globale et sans folderId, on limite aux éléments de la racine
+    } else if (!searchText && !isAll?.toString()?.equalsIgnoreCase("true") && !isAll?.toString()?.equalsIgnoreCase("1")) {
+        // En l'absence de recherche globale, de paramètre all=true et sans folderId, on limite aux éléments de la racine
         q += " and 'root' in parents"
     }
     if (searchText) {

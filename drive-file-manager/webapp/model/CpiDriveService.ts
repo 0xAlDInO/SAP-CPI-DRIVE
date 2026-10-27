@@ -38,13 +38,16 @@ export class CpiDriveService {
     /**
      * Get list of files and folders
      */
-    public async listFiles(folderId?: string, search?: string): Promise<ListResponse> {
+    public async listFiles(folderId?: string, search?: string, all?: boolean): Promise<ListResponse> {
         const params = new URLSearchParams();
         if (folderId) {
             params.append("folderId", folderId);
         }
         if (search) {
             params.append("search", search);
+        }
+        if (all) {
+            params.append("all", "true");
         }
 
         const url = `${this.baseUrl}/list${params.toString() ? "?" + params.toString() : ""}`;
