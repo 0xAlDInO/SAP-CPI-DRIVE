@@ -42,28 +42,24 @@
                             <!-- GRID / CARD VIEW (Google Drive Style) -->
                             <VBox id="gridView" visible="true">
                                 <!-- Section Dossiers (Folders Chips/Cards) -->
-                                <Panel headerText="Dossiers" expandable="false" class="sapUiTinyMarginBottom" visible="{= ${drive>/folders}.length > 0 }">
-                                    <FlexBox wrap="Wrap" fitContainer="true">
+                                <Panel headerText="Dossiers" expandable="true" expanded="true" class="sapUiTinyMarginBottom" visible="{= ${drive>/folders}.length > 0 }">
+                                    <FlexBox wrap="Wrap" items="{drive>/folders}">
                                         <items>
-                                            <HBox items="{drive>/folders}">
-                                                <items>
-                                                    <CustomListItem type="Active" press=".onFolderPress" class="folderChipItem sapUiTinyMarginEnd sapUiTinyMarginBottom">
-                                                        <HBox alignItems="Center" justifyContent="SpaceBetween" class="folderChipBox">
-                                                            <HBox alignItems="Center">
-                                                                <core:Icon src="sap-icon://folder-blank" color="#5E6977" size="1.25rem" class="sapUiTinyMarginEnd"/>
-                                                                <Text text="{drive>name}" maxLines="1" class="folderChipText"/>
-                                                            </HBox>
-                                                            <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet" class="folderChipBtn"/>
-                                                        </HBox>
-                                                    </CustomListItem>
-                                                </items>
-                                            </HBox>
+                                            <CustomListItem type="Active" press=".onFolderPress" class="folderChipItem sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                                                <HBox alignItems="Center" justifyContent="SpaceBetween" class="folderChipBox">
+                                                    <HBox alignItems="Center">
+                                                        <core:Icon src="sap-icon://folder-blank" color="#5E6977" size="1.25rem" class="sapUiTinyMarginEnd"/>
+                                                        <Text text="{drive>name}" maxLines="1" class="folderChipText"/>
+                                                    </HBox>
+                                                    <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet" class="folderChipBtn"/>
+                                                </HBox>
+                                            </CustomListItem>
                                         </items>
                                     </FlexBox>
                                 </Panel>
 
                                 <!-- Section Fichiers (File Cards) -->
-                                <Panel headerText="Fichiers" expandable="false" visible="{= ${drive>/filesOnly}.length > 0 }">
+                                <Panel headerText="Fichiers" expandable="true" expanded="true" visible="{= ${drive>/filesOnly}.length > 0 }">
                                     <f:GridList id="filesGridList" items="{drive>/filesOnly}">
                                         <f:customLayout>
                                             <grid:GridBoxLayout boxWidth="14rem"/>
