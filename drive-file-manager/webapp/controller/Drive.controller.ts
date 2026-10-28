@@ -13,6 +13,8 @@ import FileUploader from "sap/ui/unified/FileUploader";
 import VBox from "sap/m/VBox";
 import Breadcrumbs from "sap/m/Breadcrumbs";
 import Link from "sap/m/Link";
+import Select from "sap/m/Select";
+import SearchField from "sap/m/SearchField";
 import Event from "sap/ui/base/Event";
 import Control from "sap/ui/core/Control";
 import { CpiDriveService, DriveFile } from "../model/CpiDriveService";
@@ -74,13 +76,95 @@ export default class Drive extends Controller {
             const filesOnly = files.filter(f => !f.isFolder);
 
             driveModel.setProperty("/files", files);
-            driveModel.setProperty("/folders", folders);
-            driveModel.setProperty("/filesOnly", filesOnly);
             driveModel.setProperty("/currentFolderId", folderId || "");
+
+            this.applySortAndFilter();
         } catch (error: any) {
             MessageBox.error("Erreur de chargement : " + (error.message || error));
         } finally {
             driveModel.setProperty("/busy", false);
+        }
+    }
+
+    /**
+     * Event Handler for Sort Dropdown Change
+     */
+    public onSortSelect(): void {
+        this.applySortAndFilter();
+    }
+
+    /**
+     * Sort and filter drive model data based on current search and selected sort option
+     */
+    private applySortAndFilter(): void {
+        const driveModel = this.getView()?.getModel("drive") as JSONModel;
+        const allFiles: DriveFile[] = driveModel.getProperty("/files") || [];
+
+        const searchField = this.byId("searchField") as SearchField;
+        const query = (searchField ? searchField.getValue() : "").toLowerCase().trim();
+
+        const sortSelect = this.byId("sortSelect") as Select;
+        const sortKey = sortSelect ? sortSelect.getSelectedKey() : "nameAsc";
+
+        // Filter files by search query
+        let filtered = allFiles;
+        if (query) {
+            filtered = allFiles.filter(f => f.name.toLowerCase().includes(query));
+        }
+
+        // Sort function
+        const compareFiles = (a: DriveFile, b: DriveFile): number => {
+            switch (sortKey) {
+                case "nameAsc":
+                    return a.name.localeCompare(b.name);
+                case "nameDesc":
+                    return b.name.localeCompare(a.name);
+                case "modDesc": {
+                    const tA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
+                    const tB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
+                    return tB - tA;
+                }
+                case "modAsc": {
+                    const tA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
+                    const tB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
+                    return tA - tB;
+                }
+                case "createdDesc": {
+                    const cA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+                    const cB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+                    return cB - cA;
+                }
+                case "createdAsc": {
+                    const cA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+                    const cB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+                    return cA - cB;
+                }
+                case "sizeDesc":
+                    return (b.size || 0) - (a.size || 0);
+                case "sizeAsc":
+                    return (a.size || 0) - (b.size || 0);
+                default:
+                    return a.name.localeCompare(b.name);
+            }
+        };
+
+        const sortedFolders = filtered.filter(f => f.isFolder).sort(compareFiles);
+        const sortedFiles = filtered.filter(f => !f.isFolder).sort(compareFiles);
+
+        driveModel.setProperty("/folders", sortedFolders);
+        driveModel.setProperty("/filesOnly", sortedFiles);
+
+        // Update Table Binding
+        const table = this.byId("filesTable") as any;
+        if (table) {
+            const binding = table.getBinding("items");
+            if (binding) {
+                if (query) {
+                    binding.filter([new Filter("name", FilterOperator.Contains, query)]);
+                } else {
+                    binding.filter([]);
+                }
+            }
         }
     }
 
@@ -244,28 +328,8 @@ export default class Drive extends Controller {
     /**
      * Search filtering
      */
-    public onSearchLive(event: Event): void {
-        const params = event.getParameters() as any;
-        const query = (params?.query || params?.newValue || "").toLowerCase().trim();
-        const driveModel = this.getView()?.getModel("drive") as JSONModel;
-        const files: DriveFile[] = driveModel.getProperty("/files") || [];
-
-        if (query) {
-            const filteredFiles = files.filter(f => f.name.toLowerCase().includes(query));
-            driveModel.setProperty("/folders", filteredFiles.filter(f => f.isFolder));
-            driveModel.setProperty("/filesOnly", filteredFiles.filter(f => !f.isFolder));
-
-            const table = this.byId("filesTable") as any;
-            const binding = table.getBinding("items");
-            binding.filter([new Filter("name", FilterOperator.Contains, query)]);
-        } else {
-            driveModel.setProperty("/folders", files.filter(f => f.isFolder));
-            driveModel.setProperty("/filesOnly", files.filter(f => !f.isFolder));
-
-            const table = this.byId("filesTable") as any;
-            const binding = table.getBinding("items");
-            binding.filter([]);
-        }
+    public onSearchLive(): void {
+        this.applySortAndFilter();
     }
 
     /**

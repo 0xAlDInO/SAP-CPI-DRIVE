@@ -30,7 +30,17 @@
                             <OverflowToolbar class="sapUiTinyMarginBottom">
                                 <Title text="Google Drive" level="H2"/>
                                 <ToolbarSpacer/>
-                                <SearchField width="35%" placeholder="{i18n>toolbarSearchPlaceholder}" search=".onSearchLive" liveChange=".onSearchLive"/>
+                                <SearchField id="searchField" width="30%" placeholder="{i18n>toolbarSearchPlaceholder}" search=".onSearchLive" liveChange=".onSearchLive"/>
+                                <Select id="sortSelect" icon="sap-icon://sort" change=".onSortSelect" tooltip="Trier par">
+                                    <core:Item key="nameAsc" text="Nom (A-Z)"/>
+                                    <core:Item key="nameDesc" text="Nom (Z-A)"/>
+                                    <core:Item key="modDesc" text="Date modif (Plus récents)"/>
+                                    <core:Item key="modAsc" text="Date modif (Plus anciens)"/>
+                                    <core:Item key="createdDesc" text="Date création (Plus récents)"/>
+                                    <core:Item key="createdAsc" text="Date création (Plus anciens)"/>
+                                    <core:Item key="sizeDesc" text="Taille (Plus grands)"/>
+                                    <core:Item key="sizeAsc" text="Taille (Plus petits)"/>
+                                </Select>
                                 <SegmentedButton selectedKey="grid" select=".onLayoutChange">
                                     <items>
                                         <SegmentedButtonItem icon="sap-icon://grid" key="grid" tooltip="Vue Grille (Drive)"/>
