@@ -662,4 +662,96 @@ export default class Drive extends Controller {
             return dateStr;
         }
     }
+
+    /**
+     * File Icon Formatter by extension & mimeType
+     */
+    public formatFileIcon(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        if (isFolder) {
+            return "sap-icon://folder-blank";
+        }
+        const mime = (mimeType || "").toLowerCase();
+        const ext = (fileName || "").split(".").pop()?.toLowerCase() || "";
+
+        // Archives (ZIP, RAR, 7Z, TAR, GZ)
+        if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(ext) || mime.includes("zip") || mime.includes("compressed") || mime.includes("archive") || mime.includes("tar") || mime.includes("rar")) {
+            return "sap-icon://attachment-zip-file";
+        }
+        // PDF
+        if (ext === "pdf" || mime.includes("pdf")) {
+            return "sap-icon://pdf-attachment";
+        }
+        // Images (PNG, JPG, JPEG, GIF, SVG, WEBP)
+        if (["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"].includes(ext) || mime.includes("image")) {
+            return "sap-icon://attachment-photo";
+        }
+        // Spreadsheets (Excel, CSV)
+        if (["xls", "xlsx", "csv", "ods"].includes(ext) || mime.includes("excel") || mime.includes("spreadsheet") || mime.includes("csv")) {
+            return "sap-icon://excel-attachment";
+        }
+        // Documents (Word, Text, ODT)
+        if (["doc", "docx", "txt", "rtf", "odt"].includes(ext) || mime.includes("word") || mime.includes("document") || mime.includes("text/plain")) {
+            return "sap-icon://document";
+        }
+        // Presentations (PPT, PPTX, ODP)
+        if (["ppt", "pptx", "odp"].includes(ext) || mime.includes("presentation") || mime.includes("powerpoint")) {
+            return "sap-icon://ppt-attachment";
+        }
+        // Audio (MP3, WAV, OGG, AAC, FLAC)
+        if (["mp3", "wav", "ogg", "aac", "flac", "m4a"].includes(ext) || mime.includes("audio")) {
+            return "sap-icon://audio";
+        }
+        // Video (MP4, AVI, MKV, MOV, WEBM)
+        if (["mp4", "avi", "mkv", "mov", "webm", "flv"].includes(ext) || mime.includes("video")) {
+            return "sap-icon://video";
+        }
+        // Code / Scripts (JS, TS, HTML, CSS, JSON, XML, JAVA, PY, SH)
+        if (["js", "ts", "html", "css", "json", "xml", "java", "py", "sh", "groovy"].includes(ext) || mime.includes("json") || mime.includes("javascript") || mime.includes("xml")) {
+            return "sap-icon://developer-settings";
+        }
+
+        return "sap-icon://document-text";
+    }
+
+    /**
+     * File Icon Color Formatter
+     */
+    public formatFileIconColor(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        if (isFolder) {
+            return "#E89D00";
+        }
+        const mime = (mimeType || "").toLowerCase();
+        const ext = (fileName || "").split(".").pop()?.toLowerCase() || "";
+
+        // Archives (ZIP, RAR) -> Orange/Amber
+        if (["zip", "rar", "7z", "tar", "gz"].includes(ext) || mime.includes("zip") || mime.includes("compressed") || mime.includes("archive") || mime.includes("rar")) {
+            return "#E65100";
+        }
+        // PDF -> Red
+        if (ext === "pdf" || mime.includes("pdf")) {
+            return "#D32F2F";
+        }
+        // Images -> Green
+        if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext) || mime.includes("image")) {
+            return "#388E3C";
+        }
+        // Spreadsheets -> Dark Green
+        if (["xls", "xlsx", "csv"].includes(ext) || mime.includes("excel") || mime.includes("spreadsheet")) {
+            return "#1B5E20";
+        }
+        // Word/Docs -> Blue
+        if (["doc", "docx", "txt"].includes(ext) || mime.includes("word") || mime.includes("document")) {
+            return "#1976D2";
+        }
+        // Presentations -> Deep Orange
+        if (["ppt", "pptx"].includes(ext) || mime.includes("presentation") || mime.includes("powerpoint")) {
+            return "#F57C00";
+        }
+        // Audio/Video -> Purple
+        if (["mp3", "wav", "mp4", "avi", "mkv"].includes(ext) || mime.includes("audio") || mime.includes("video")) {
+            return "#7B1FA2";
+        }
+
+        return "#546E7A";
+    }
 }
