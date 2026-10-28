@@ -209,16 +209,17 @@ export default class Drive extends Controller {
      */
     public onLayoutChange(event: Event): void {
         const params = event.getParameters() as any;
-        const key = params?.item?.getKey();
+        const key = params?.key || params?.selectedItem?.getKey() || params?.item?.getKey();
         const gridView = this.byId("gridView") as Control;
         const filesTable = this.byId("filesTable") as Control;
 
-        if (key === "grid") {
-            gridView.setVisible(true);
-            filesTable.setVisible(false);
-        } else {
+        if (key === "table") {
             gridView.setVisible(false);
             filesTable.setVisible(true);
+        } else {
+            // Default or 'grid'
+            gridView.setVisible(true);
+            filesTable.setVisible(false);
         }
     }
 
