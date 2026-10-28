@@ -1,4 +1,4 @@
-/* Custom styling for Drive File Manager (SAP Horizon Theme compatible) */
+/* Custom styling for Drive File Manager (SAP Horizon / Google Drive Style) */
 
 .sapFDynamicPageContent {
     padding-top: 0.5rem;
@@ -12,4 +12,76 @@
 .sapMPanel {
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* Folder Chip Styling (Google Drive top section) */
+.folderChipItem {
+    border-radius: 12px !important;
+    background-color: #F1F3F4 !important;
+    border: 1px solid #E0E0E0 !important;
+    padding: 0.5rem 0.75rem !important;
+    width: 15rem;
+}
+
+.folderChipItem:hover {
+    background-color: #E8EAED !important;
+}
+
+.folderChipBox {
+    width: 100%;
+}
+
+.folderChipText {
+    font-weight: 500;
+    color: #202124;
+    font-size: 0.9rem;
+}
+
+.folderChipBtn {
+    margin-left: 0.25rem;
+}
+
+/* File Card Styling (Google Drive bottom section) */
+.fileCardItem {
+    border-radius: 12px !important;
+    border: 1px solid #E0E0E0 !important;
+    background-color: #FFFFFF !important;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.fileCardItem:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #C0C0C0 !important;
+}
+
+.fileCardBox {
+    padding: 0.75rem;
+}
+
+.fileCardHeader {
+    border-bottom: 1px solid #F1F3F4;
+    padding-bottom: 0.5rem;
+}
+
+.fileCardTitle {
+    font-weight: 500;
+    color: #202124;
+    font-size: 0.875rem;
+}
+
+.fileCardPreview {
+    height: 8rem;
+    background-color: #F8F9FA;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+}
+
+.fileCardFooter {
+    padding-top: 0.25rem;
+}
+
+.fileCardMeta {
+    font-size: 0.75rem;
+    color: #5F6368;
 }

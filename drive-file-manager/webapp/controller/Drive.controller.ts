@@ -14,6 +14,7 @@ import VBox from "sap/m/VBox";
 import Breadcrumbs from "sap/m/Breadcrumbs";
 import Link from "sap/m/Link";
 import Event from "sap/ui/base/Event";
+import Control from "sap/ui/core/Control";
 import { CpiDriveService, DriveFile } from "../model/CpiDriveService";
 
 interface FolderBreadcrumb {
@@ -35,6 +36,8 @@ export default class Drive extends Controller {
         // Initialize Drive JSON Model
         const driveModel = new JSONModel({
             files: [],
+            folders: [],
+            filesOnly: [],
             allFiles: [],
             currentFolderId: "",
             busy: false
@@ -67,7 +70,12 @@ export default class Drive extends Controller {
             const data = await this.driveService.listFiles(folderId);
             const files: DriveFile[] = data.files || [];
 
+            const folders = files.filter(f => f.isFolder);
+            const filesOnly = files.filter(f => !f.isFolder);
+
             driveModel.setProperty("/files", files);
+            driveModel.setProperty("/folders", folders);
+            driveModel.setProperty("/filesOnly", filesOnly);
             driveModel.setProperty("/currentFolderId", folderId || "");
         } catch (error: any) {
             MessageBox.error("Erreur de chargement : " + (error.message || error));
@@ -197,18 +205,64 @@ export default class Drive extends Controller {
     }
 
     /**
+     * Layout Change (Grid vs Table)
+     */
+    public onLayoutChange(event: Event): void {
+        const params = event.getParameters() as any;
+        const key = params?.item?.getKey();
+        const gridView = this.byId("gridView") as Control;
+        const filesTable = this.byId("filesTable") as Control;
+
+        if (key === "grid") {
+            gridView.setVisible(true);
+            filesTable.setVisible(false);
+        } else {
+            gridView.setVisible(false);
+            filesTable.setVisible(true);
+        }
+    }
+
+    /**
+     * Handle folder chip press
+     */
+    public onFolderPress(event: Event): void {
+        const item = event.getSource() as any;
+        const context = item.getBindingContext("drive");
+        const folder: DriveFile = context ? context.getObject() : null;
+
+        if (folder && folder.isFolder) {
+            this.currentFolderHistory.push({
+                id: folder.id,
+                name: folder.name
+            });
+            this.updateBreadcrumbs();
+            this.loadDriveData(folder.id);
+        }
+    }
+
+    /**
      * Search filtering
      */
     public onSearchLive(event: Event): void {
         const params = event.getParameters() as any;
-        const query = params?.query || params?.newValue || "";
-        const table = this.byId("filesTable") as any;
-        const binding = table.getBinding("items");
+        const query = (params?.query || params?.newValue || "").toLowerCase().trim();
+        const driveModel = this.getView()?.getModel("drive") as JSONModel;
+        const files: DriveFile[] = driveModel.getProperty("/files") || [];
 
         if (query) {
-            const filter = new Filter("name", FilterOperator.Contains, query);
-            binding.filter([filter]);
+            const filteredFiles = files.filter(f => f.name.toLowerCase().includes(query));
+            driveModel.setProperty("/folders", filteredFiles.filter(f => f.isFolder));
+            driveModel.setProperty("/filesOnly", filteredFiles.filter(f => !f.isFolder));
+
+            const table = this.byId("filesTable") as any;
+            const binding = table.getBinding("items");
+            binding.filter([new Filter("name", FilterOperator.Contains, query)]);
         } else {
+            driveModel.setProperty("/folders", files.filter(f => f.isFolder));
+            driveModel.setProperty("/filesOnly", files.filter(f => !f.isFolder));
+
+            const table = this.byId("filesTable") as any;
+            const binding = table.getBinding("items");
             binding.filter([]);
         }
     }
