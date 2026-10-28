@@ -31,14 +31,24 @@
     width: 100%;
 }
 
+.folderChipTitleBox {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
 .folderChipText {
     font-weight: 500;
     color: #202124;
     font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .folderChipBtn {
     margin-left: 0.25rem;
+    flex: 0 0 auto;
 }
 
 /* File Card Styling (Google Drive bottom section) */
@@ -64,10 +74,24 @@
     padding-bottom: 0.5rem;
 }
 
+.fileCardTitleBox {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
 .fileCardTitle {
     font-weight: 500;
     color: #202124;
     font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fileCardBtn {
+    flex: 0 0 auto;
+    margin-left: 0.25rem;
 }
 
 .fileCardPreview {

@@ -47,7 +47,7 @@
                                         <items>
                                             <CustomListItem type="Active" press=".onFolderPress" class="folderChipItem sapUiTinyMarginEnd sapUiTinyMarginBottom">
                                                 <HBox alignItems="Center" justifyContent="SpaceBetween" class="folderChipBox">
-                                                    <HBox alignItems="Center">
+                                                    <HBox alignItems="Center" class="folderChipTitleBox">
                                                         <core:Icon src="sap-icon://folder-blank" color="#5E6977" size="1.25rem" class="sapUiTinyMarginEnd"/>
                                                         <Text text="{drive>name}" maxLines="1" class="folderChipText"/>
                                                     </HBox>
@@ -69,14 +69,14 @@
                                                 <VBox class="fileCardBox">
                                                     <!-- Header: Type Icon, File Name, and Overflow Menu -->
                                                     <HBox alignItems="Center" justifyContent="SpaceBetween" class="fileCardHeader">
-                                                        <HBox alignItems="Center">
+                                                        <HBox alignItems="Center" class="fileCardTitleBox">
                                                             <core:Icon src="{= ${drive>mimeType} === 'application/pdf' ? 'sap-icon://pdf-attachment' : (${drive>mimeType} === 'image/png' || ${drive>mimeType} === 'image/jpeg' ? 'sap-icon://attachment-photo' : (${drive>mimeType} === 'application/vnd.google-apps.document' || ${drive>mimeType} === 'text/plain' ? 'sap-icon://document' : 'sap-icon://document-text')) }"
                                                                        color="{= ${drive>mimeType} === 'application/pdf' ? '#D32F2F' : (${drive>mimeType} === 'image/png' || ${drive>mimeType} === 'image/jpeg' ? '#388E3C' : '#1976D2') }"
                                                                        size="1.2rem"
                                                                        class="sapUiTinyMarginEnd"/>
                                                             <Text text="{drive>name}" maxLines="1" class="fileCardTitle"/>
                                                         </HBox>
-                                                        <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet"/>
+                                                        <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet" class="fileCardBtn"/>
                                                     </HBox>
 
                                                     <!-- Preview / Thumbnail Box -->
