@@ -85,7 +85,8 @@ Pour tester l'application directement dans BAS :
    ```
 
 2. Une notification d'ouverture de port apparaîtra en bas à droite dans BAS. Cliquez sur **Open in New Tab** ou **Exposer le port**.
-3. L'application Fiori s'ouvrira avec l'interface Google Drive (vue Grille, vue Tableau, filtres par type, tri multi-critères, et Tableau de bord).
+3. **Important** : Si le navigateur ouvre la liste des fichiers/dossiers du répertoire (`/`), cliquez simplement sur `index.html` ou accédez à l'URL `http://localhost:<PORT>/index.html`.
+4. L'application Fiori s'ouvrira directement avec l'interface Google Drive (vue Grille, vue Tableau, filtres par type, tri multi-critères, et Tableau de bord).
 
 ---
 
