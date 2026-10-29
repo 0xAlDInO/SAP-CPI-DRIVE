@@ -127,7 +127,32 @@ Pour déployer l'application sur le HTML5 Application Repository de SAP BTP depu
    ```bash
    npm run deploy
    ```
-   *(Le fichier `ui5-deploy.yaml` a été pré-créé pour éviter l'avertissement "No deployment configuration has been detected". Pour personnaliser la cible ABAP ou HTML5, exécutez `npm run deploy-config`).*
+
+---
+
+## ❓ Comment obtenir et configurer l'URL du système (`YOUR_ABAP_SYSTEM_URL`) ?
+
+L'URL `YOUR_ABAP_SYSTEM_URL` présente dans `ui5-deploy.yaml` est un exemple d'espace réservé. Votre configuration dépend de votre cible de déploiement :
+
+### Option A : Déploiement sur un serveur SAP ABAP (S/4HANA ou On-Premise)
+Si vous souhaitez déployer l'application Fiori sur le dépôt BSP d'un système SAP ABAP :
+1. **Où la trouver ?** : C'est l'URL HTTPS d'accès à votre serveur SAP ABAP (ex: `https://sapserver.domaine.com:44300` ou `https://my-s4hana.company.com`). Vous la trouverez dans votre SAP GUI (via la transaction `SM51` / `SICF`) ou auprès de votre équipe SAP Basis.
+2. **Comment la configurer ?** : Exécutez l'assistant interactif dans le terminal de BAS :
+   ```bash
+   cd drive-file-manager
+   npm run deploy-config
+   ```
+   Sélectionnez la cible **ABAP**, puis entrez l'URL de votre serveur, le numéro de mandant (client), le nom de l'application (ex: `ZDRIVE_MGR`) et le package ABAP.
+
+### Option B : Déploiement sur SAP BTP Cloud Foundry (HTML5 Repository)
+Si vous déployez sur **SAP BTP Cloud Foundry** (l'environnement natif de BAS) :
+1. Vous n'avez **pas besoin** d'URL ABAP !
+2. Exécutez simplement l'assistant de configuration :
+   ```bash
+   cd drive-file-manager
+   npm run deploy-config
+   ```
+3. Choisissez la cible **Cloud Foundry**. L'assistant générera automatiquement le fichier `mta.yaml` adapté à votre sous-compte BTP.
 
 ---
 
