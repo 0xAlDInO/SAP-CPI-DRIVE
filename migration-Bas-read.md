@@ -152,7 +152,34 @@ Si vous déployez sur **SAP BTP Cloud Foundry** (l'environnement natif de BAS) :
    cd drive-file-manager
    npm run deploy-config
    ```
-3. Choisissez la cible **Cloud Foundry**. L'assistant générera automatiquement le fichier `mta.yaml` adapté à votre sous-compte BTP.
+3. Suivez les étapes de l'assistant dans le terminal :
+   - **Target**: Cloud Foundry
+   - **Destination**: CPI_DRIVE_API (ou votre destination CPI BTP)
+   - L'assistant va créer/mettre à jour le fichier `mta.yaml` et `ui5-deploy.yaml`.
+
+---
+
+## 🚀 Que faire APRÈS avoir exécuté `npm run deploy-config` ?
+
+Une fois la configuration terminée par l'assistant, voici les étapes pour lancer le déploiement réel :
+
+### Pour un déploiement sur SAP BTP Cloud Foundry :
+1. **Générer l'archive MTA (fichier `.mtar`)** :
+   ```bash
+   mbt build
+   ```
+   *(Cela va créer le fichier d'archive dans le dossier `mta_archives/`)*.
+
+2. **Déployer sur BTP Cloud Foundry** :
+   ```bash
+   cf deploy mta_archives/drive-file-manager_0.0.1.mtar
+   ```
+
+### Pour un déploiement sur un système SAP ABAP :
+1. **Lancer le déploiement direct** :
+   ```bash
+   npm run deploy
+   ```
 
 ---
 
