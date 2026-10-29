@@ -114,10 +114,15 @@ Pour déployer l'application sur le HTML5 Application Repository de SAP BTP depu
    npm run build
    ```
 2. Connectez-vous à votre espace Cloud Foundry dans BAS :
+   ⚠️ **ATTENTION** : L'URL de `cf login` doit être l'API Cloud Foundry de votre région BTP (par exemple `https://api.cf.us10-001.hana.ondemand.com`), et **NON** l'endpoint HTTP de votre IFlow CPI !
+
+   Si votre CLI `cf` a conservé l'endpoint CPI par erreur, réinitialisez l'endpoint Cloud Foundry avec :
    ```bash
+   cf api https://api.cf.us10-001.hana.ondemand.com
    cf login
    ```
-   Select votre Org et votre Space BTP.
+   *(Remplacez `us10-001` par votre région BTP si différente, disponible sur le tableau de bord BTP Cockpit sous "API Endpoint").*
+   Sélectionnez votre **Organization** et votre **Space** BTP.
 3. Déployez via Fiori Tools / MTA :
    ```bash
    npm run deploy
