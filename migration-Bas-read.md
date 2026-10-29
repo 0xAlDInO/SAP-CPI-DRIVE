@@ -123,10 +123,11 @@ Pour déployer l'application sur le HTML5 Application Repository de SAP BTP depu
    ```
    *(Remplacez `us10-001` par votre région BTP si différente, disponible sur le tableau de bord BTP Cockpit sous "API Endpoint").*
    Sélectionnez votre **Organization** et votre **Space** BTP.
-3. Déployez via Fiori Tools / MTA :
+3. Déployez via Fiori Tools :
    ```bash
    npm run deploy
    ```
+   *(Le fichier `ui5-deploy.yaml` a été pré-créé pour éviter l'avertissement "No deployment configuration has been detected". Pour personnaliser la cible ABAP ou HTML5, exécutez `npm run deploy-config`).*
 
 ---
 

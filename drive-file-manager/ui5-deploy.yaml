@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+
+specVersion: "4.0"
+metadata:
+  name: poc.cpi.ral.drivefilemanager
+type: application
+builder:
+  resources:
+    excludes:
+      - /test/**
+      - /localService/**
+  customTasks:
+    - name: ui5-tooling-transpile-task
+      afterTask: replaceVersion
+      configuration:
+        debug: true
+        transformModulesToUI5:
+          overridesToOverride: true
+    - name: deploy-to-abap
+      afterTask: generateFrameworkBundle
+      configuration:
+        target:
+          url: https://YOUR_ABAP_SYSTEM_URL
+          client: '100'
+        app:
+          name: ZDRIVE_MGR
+          package: $TMP
+          transport: ''

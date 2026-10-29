@@ -19,6 +19,9 @@ npm run start-noflp
 
 # 3. Compiler l'application pour la production
 npm run build
+
+# 4. Vérifier la configuration de déploiement (fiori verify)
+npm --prefix drive-file-manager run deploy
 ```
 
 ---
