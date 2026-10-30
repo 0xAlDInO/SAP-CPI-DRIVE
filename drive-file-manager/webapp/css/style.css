@@ -1,111 +1,504 @@
-/* Custom styling for Drive File Manager (SAP Horizon / Google Drive Style) */
+/* ==========================================================================
+   STYLE SHEET - GESTIONNAIRE DE FICHIERS GOOGLE DRIVE SAP FIORI
+   Compatible Thème Clair (sap_horizon) et Thème Sombre (sap_horizon_dark)
+   ========================================================================== */
 
-.sapFDynamicPageContent {
-    padding-top: 0.5rem;
+/* --------------------------------------------------------------------------
+   1. Structure Générale & Page
+   -------------------------------------------------------------------------- */
+.drivePage {
+    background-color: var(--sapBackgroundColor, #F5F7FA);
 }
 
-.sapMGenericTile {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+.navigationToolbar {
+    padding: 0.5rem 0;
+}
+
+.driveToolbar {
     border-radius: 8px;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .sapMPanel {
-    border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    margin-bottom: 0.75rem;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
-/* Folder Chip Styling (Google Drive top section) */
-.folderChipItem {
-    border-radius: 12px !important;
-    background-color: #F1F3F4 !important;
-    border: 1px solid #E0E0E0 !important;
-    padding: 0.5rem 0.75rem !important;
-    width: 15rem;
+.sapMPanelContent {
+    box-sizing: border-box !important;
+    width: 100% !important;
 }
 
-.folderChipItem:hover {
-    background-color: #E8EAED !important;
+/* --------------------------------------------------------------------------
+   2. Section Dossiers (Folders) - Grille Fluide 100% Largeur
+   -------------------------------------------------------------------------- */
+.foldersGridList,
+.filesGridList {
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
-.folderChipBox {
+.foldersGridList .sapFGridList,
+.foldersGridList .sapUiLayoutCSSGrid,
+.foldersGridList ul {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)) !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.folderCardItem {
+    border-radius: 10px !important;
+    border: 1px solid #E2E8F0 !important;
+    background: #F8FAFC !important;
+    padding: 0.65rem 0.85rem !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.folderCardItem:hover {
+    transform: translateY(-2px);
+    border-color: #0A6ED1 !important;
+    background: #F1F5F9 !important;
+    box-shadow: 0 4px 12px rgba(10, 110, 209, 0.12);
+}
+
+.folderCardBox {
     width: 100%;
 }
 
-.folderChipTitleBox {
+.folderCardTitleBox {
     min-width: 0;
     flex: 1 1 auto;
     overflow: hidden;
 }
 
-.folderChipText {
-    font-weight: 500;
-    color: #202124;
-    font-size: 0.9rem;
+.folderCardTitle {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #0F172A;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.folderChipBtn {
+.folderCardBtn {
     margin-left: 0.25rem;
     flex: 0 0 auto;
+    border-radius: 50% !important;
 }
 
-/* File Card Styling (Google Drive bottom section) */
+/* --------------------------------------------------------------------------
+   3. Section Fichiers (File Cards) - Grille Fluide 100% Largeur
+   -------------------------------------------------------------------------- */
+.filesGridList .sapFGridList,
+.filesGridList .sapUiLayoutCSSGrid,
+.filesGridList ul {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)) !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
 .fileCardItem {
     border-radius: 12px !important;
-    border: 1px solid #E0E0E0 !important;
-    background-color: #FFFFFF !important;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #E2E8F0 !important;
+    background: #FFFFFF !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .fileCardItem:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #C0C0C0 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: #0A6ED1 !important;
 }
 
 .fileCardBox {
-    padding: 0.75rem;
+    width: 100%;
+    height: 100%;
 }
 
-.fileCardHeader {
-    border-bottom: 1px solid #F1F3F4;
-    padding-bottom: 0.5rem;
+/* Bannière de prévisualisation supérieure */
+.fileCardPreview {
+    height: 5.75rem;
+    width: 100%;
+    position: relative;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.fileCardTitleBox {
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
+.filePreviewHeader {
+    width: 100%;
+    z-index: 2;
 }
 
-.fileCardTitle {
-    font-weight: 500;
-    color: #202124;
+.fileTypeBadge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #334155;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.fileCardOverflowBtn {
+    border-radius: 50% !important;
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+}
+
+.fileCardOverflowBtn:hover {
+    background-color: #FFFFFF !important;
+}
+
+.filePreviewIconBox {
+    width: 100%;
+    margin-top: -0.4rem;
+}
+
+/* Teintes thématiques claires par type de document */
+.preview-pdf {
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+}
+.preview-excel {
+    background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
+}
+.preview-word {
+    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+}
+.preview-image {
+    background: linear-gradient(135deg, #CCFBF1 0%, #99F6E4 100%);
+}
+.preview-archive {
+    background: linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%);
+}
+.preview-default {
+    background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+}
+
+/* Détails inférieurs (Titre & Métadonnées) */
+.fileCardDetails {
+    padding: 0.75rem 0.85rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 4.5rem;
+    background: transparent;
+}
+
+.fileCardName {
+    font-weight: 600;
     font-size: 0.875rem;
+    color: #0F172A;
+    line-height: 1.25;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    min-height: 2.2rem;
 }
 
-.fileCardBtn {
-    flex: 0 0 auto;
-    margin-left: 0.25rem;
+.fileCardMetaRow {
+    width: 100%;
+    border-top: 1px solid #E2E8F0;
+    padding-top: 0.4rem;
 }
 
-.fileCardPreview {
-    height: 8rem;
-    background-color: #F8F9FA;
-    border-radius: 8px;
-    margin: 0.5rem 0;
+.fileMetaIcon {
+    color: #64748B;
+    margin-right: 0.25rem;
 }
 
-.fileCardFooter {
-    padding-top: 0.25rem;
-}
-
-.fileCardMeta {
+.fileCardSizeText {
     font-size: 0.75rem;
-    color: #5F6368;
+    font-weight: 500;
+    color: #64748B;
+}
+
+.fileCardDateText {
+    font-size: 0.72rem;
+    color: #64748B;
+    text-align: right;
+}
+
+/* ==========================================================================
+   4. MODE SOMBRE (DARK MODE HARMONIEUX & HAUTE LISIBILITÉ)
+   ========================================================================== */
+
+/* Structure de fond sombre */
+.appDarkMode .drivePage,
+.appDarkMode.drivePage,
+html[data-sap-ui-theme*="dark"] .drivePage,
+.sapUiTheme-sap_horizon_dark .drivePage {
+    background-color: #0F172A !important;
+}
+
+/* Panneaux et barres d'outils sombres */
+.appDarkMode .sapMPanel,
+html[data-sap-ui-theme*="dark"] .sapMPanel,
+.sapUiTheme-sap_horizon_dark .sapMPanel {
+    background-color: #162032 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.appDarkMode .sapMPanelHdr,
+html[data-sap-ui-theme*="dark"] .sapMPanelHdr,
+.sapUiTheme-sap_horizon_dark .sapMPanelHdr {
+    color: #F8FAFC !important;
+}
+
+.appDarkMode .driveToolbar,
+html[data-sap-ui-theme*="dark"] .driveToolbar,
+.sapUiTheme-sap_horizon_dark .driveToolbar {
+    background-color: #162032 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.appDarkMode .sapMBreadcrumbsCurrentLocation,
+html[data-sap-ui-theme*="dark"] .sapMBreadcrumbsCurrentLocation,
+.sapUiTheme-sap_horizon_dark .sapMBreadcrumbsCurrentLocation {
+    color: #F8FAFC !important;
+    font-weight: 600;
+}
+
+/* Dossiers en Mode Sombre (Midnight Slate élégant) */
+.appDarkMode .folderCardItem,
+html[data-sap-ui-theme*="dark"] .folderCardItem,
+.sapUiTheme-sap_horizon_dark .folderCardItem {
+    background: linear-gradient(135deg, #1E293B 0%, #172233 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.appDarkMode .folderCardItem:hover,
+html[data-sap-ui-theme*="dark"] .folderCardItem:hover,
+.sapUiTheme-sap_horizon_dark .folderCardItem:hover {
+    background: linear-gradient(135deg, #28364D 0%, #1E2B3E 100%) !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2) !important;
+}
+
+.appDarkMode .folderCardTitle,
+html[data-sap-ui-theme*="dark"] .folderCardTitle,
+.sapUiTheme-sap_horizon_dark .folderCardTitle {
+    color: #F8FAFC !important;
+}
+
+.appDarkMode .folderCardTitleBox .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .folderCardTitleBox .sapUiIcon,
+.sapUiTheme-sap_horizon_dark .folderCardTitleBox .sapUiIcon {
+    color: #FBBF24 !important; /* Doré lumineux pour le dossier */
+}
+
+/* Fichiers en Mode Sombre (Cartes foncées contrastées, fini le blanc aveuglant) */
+.appDarkMode .fileCardItem,
+html[data-sap-ui-theme*="dark"] .fileCardItem,
+.sapUiTheme-sap_horizon_dark .fileCardItem {
+    background: #1B2433 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.appDarkMode .fileCardItem:hover,
+html[data-sap-ui-theme*="dark"] .fileCardItem:hover,
+.sapUiTheme-sap_horizon_dark .fileCardItem:hover {
+    background: #212D40 !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.15) !important;
+}
+
+.appDarkMode .fileCardDetails,
+html[data-sap-ui-theme*="dark"] .fileCardDetails,
+.sapUiTheme-sap_horizon_dark .fileCardDetails {
+    background: transparent !important;
+}
+
+.appDarkMode .fileCardName,
+html[data-sap-ui-theme*="dark"] .fileCardName,
+.sapUiTheme-sap_horizon_dark .fileCardName {
+    color: #F8FAFC !important;
+}
+
+.appDarkMode .fileCardMetaRow,
+html[data-sap-ui-theme*="dark"] .fileCardMetaRow,
+.sapUiTheme-sap_horizon_dark .fileCardMetaRow {
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.appDarkMode .fileMetaIcon,
+.appDarkMode .fileCardSizeText,
+.appDarkMode .fileCardDateText,
+html[data-sap-ui-theme*="dark"] .fileCardSizeText,
+html[data-sap-ui-theme*="dark"] .fileCardDateText,
+.sapUiTheme-sap_horizon_dark .fileCardSizeText {
+    color: #94A3B8 !important;
+}
+
+/* Boutons d'action overflow (3 points) en Mode Sombre */
+.appDarkMode .fileCardOverflowBtn,
+.appDarkMode .folderCardBtn,
+html[data-sap-ui-theme*="dark"] .fileCardOverflowBtn,
+html[data-sap-ui-theme*="dark"] .folderCardBtn {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #F8FAFC !important;
+}
+
+.appDarkMode .fileCardOverflowBtn:hover,
+.appDarkMode .folderCardBtn:hover,
+html[data-sap-ui-theme*="dark"] .fileCardOverflowBtn:hover,
+html[data-sap-ui-theme*="dark"] .folderCardBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #FFFFFF !important;
+}
+
+/* Bannières de prévisualisation sombres avec teintes subtiles et lumineuses */
+.appDarkMode .preview-pdf,
+html[data-sap-ui-theme*="dark"] .preview-pdf {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(153, 27, 27, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+.appDarkMode .preview-pdf .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-pdf .sapUiIcon {
+    color: #F87171 !important;
+}
+.appDarkMode .preview-pdf .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-pdf .fileTypeBadge {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    color: #FCA5A5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.appDarkMode .preview-excel,
+html[data-sap-ui-theme*="dark"] .preview-excel {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.22) 0%, rgba(20, 83, 45, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(34, 197, 94, 0.25) !important;
+}
+.appDarkMode .preview-excel .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-excel .sapUiIcon {
+    color: #4ADE80 !important;
+}
+.appDarkMode .preview-excel .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-excel .fileTypeBadge {
+    background-color: rgba(34, 197, 94, 0.25) !important;
+    color: #86EFAC !important;
+    border: 1px solid rgba(34, 197, 94, 0.4) !important;
+}
+
+.appDarkMode .preview-word,
+html[data-sap-ui-theme*="dark"] .preview-word {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(30, 58, 138, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.25) !important;
+}
+.appDarkMode .preview-word .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-word .sapUiIcon {
+    color: #60A5FA !important;
+}
+.appDarkMode .preview-word .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-word .fileTypeBadge {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+    color: #93C5FD !important;
+    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+.appDarkMode .preview-image,
+html[data-sap-ui-theme*="dark"] .preview-image {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.22) 0%, rgba(17, 94, 89, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(20, 184, 166, 0.25) !important;
+}
+.appDarkMode .preview-image .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-image .sapUiIcon {
+    color: #2DD4BF !important;
+}
+.appDarkMode .preview-image .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-image .fileTypeBadge {
+    background-color: rgba(20, 184, 166, 0.25) !important;
+    color: #5EEAD4 !important;
+    border: 1px solid rgba(20, 184, 166, 0.4) !important;
+}
+
+.appDarkMode .preview-archive,
+html[data-sap-ui-theme*="dark"] .preview-archive {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.22) 0%, rgba(157, 23, 77, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.25) !important;
+}
+.appDarkMode .preview-archive .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-archive .sapUiIcon {
+    color: #F472B6 !important;
+}
+.appDarkMode .preview-archive .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-archive .fileTypeBadge {
+    background-color: rgba(236, 72, 153, 0.25) !important;
+    color: #F9A8D4 !important;
+    border: 1px solid rgba(236, 72, 153, 0.4) !important;
+}
+
+.appDarkMode .preview-default,
+html[data-sap-ui-theme*="dark"] .preview-default {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.18) 0%, rgba(51, 65, 85, 0.08) 100%) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+.appDarkMode .preview-default .sapUiIcon,
+html[data-sap-ui-theme*="dark"] .preview-default .sapUiIcon {
+    color: #94A3B8 !important;
+}
+.appDarkMode .preview-default .fileTypeBadge,
+html[data-sap-ui-theme*="dark"] .preview-default .fileTypeBadge {
+    background-color: rgba(148, 163, 184, 0.25) !important;
+    color: #CBD5E1 !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+/* Tableau et Dashboard en Mode Sombre */
+.appDarkMode .sapMListTbl,
+html[data-sap-ui-theme*="dark"] .sapMListTbl {
+    background-color: #162032 !important;
+}
+
+.appDarkMode .sapMListTblRow,
+html[data-sap-ui-theme*="dark"] .sapMListTblRow {
+    background-color: #1B2433 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.appDarkMode .sapMListTblRow:hover,
+html[data-sap-ui-theme*="dark"] .sapMListTblRow:hover {
+    background-color: #243044 !important;
+}
+
+.appDarkMode .sapMGenericTile,
+html[data-sap-ui-theme*="dark"] .sapMGenericTile {
+    background-color: #1B2433 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }

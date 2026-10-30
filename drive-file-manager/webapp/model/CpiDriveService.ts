@@ -1,3 +1,8 @@
+/**
+ * Service de communication HTTP avec le flux SAP CPI (Integration Suite)
+ * @namespace poc.cpi.ral.drivefilemanager.model
+ */
+
 export interface DriveFile {
     id: string;
     name: string;
@@ -14,93 +19,125 @@ export interface ListResponse {
     files: DriveFile[];
 }
 
-export class CpiDriveService {
-    private baseUrl: string;
+export interface DriveApiResponse {
+    status?: string;
+    message?: string;
+    id?: string;
+    name?: string;
+}
 
-    constructor(baseUrl: string = "/cpi-api") {
+export class CpiDriveService {
+    private static credentialsUser = "";
+    private static credentialsPassword = "";
+    private readonly baseUrl: string;
+
+    public constructor(baseUrl: string = "/cpi-api") {
         this.baseUrl = baseUrl;
     }
 
     /**
-     * Set Basic Auth Credentials if required
+     * Définit en mémoire les identifiants pour l'environnement de développement
      */
-    private getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
-        const headers: Record<string, string> = { ...extraHeaders };
-        // Check for basic auth variables in localStorage if user configured them dynamically
-        const authUser = localStorage.getItem("cpi_user");
-        const authPass = localStorage.getItem("cpi_pass");
-        if (authUser && authPass) {
-            headers["Authorization"] = "Basic " + btoa(`${authUser}:${authPass}`);
+    public static setCredentials(user: string, pass: string): void {
+        CpiDriveService.credentialsUser = user;
+        CpiDriveService.credentialsPassword = pass;
+    }
+
+    /**
+     * Récupère de façon sécurisée les identifiants d'authentification s'ils sont configurés
+     */
+    private getAuthorizationHeader(): Record<string, string> {
+        const headers: Record<string, string> = {};
+        if (CpiDriveService.credentialsUser && CpiDriveService.credentialsPassword) {
+            const token = btoa(`${CpiDriveService.credentialsUser}:${CpiDriveService.credentialsPassword}`);
+            headers.Authorization = `Basic ${token}`;
         }
         return headers;
     }
 
     /**
-     * Get list of files and folders
+     * Construit une query string sans appeler .append() pour respecter les règles du linter SAP Fiori
      */
-    public async listFiles(folderId?: string, search?: string, all?: boolean): Promise<ListResponse> {
-        const params = new URLSearchParams();
-        if (folderId) {
-            params.append("folderId", folderId);
+    private buildQueryString(params: Record<string, string | boolean | undefined>): string {
+        const queryParts: string[] = [];
+        for (const [key, val] of Object.entries(params)) {
+            if (val !== undefined && val !== null && val !== "") {
+                queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(val))}`);
+            }
         }
-        if (search) {
-            params.append("search", search);
-        }
-        if (all) {
-            params.append("all", "true");
-        }
-
-        const url = `${this.baseUrl}/list${params.toString() ? "?" + params.toString() : ""}`;
-        const response = await fetch(url, {
-            method: "GET",
-            headers: this.getHeaders()
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to list files: ${response.status} ${response.statusText}`);
-        }
-
-        return await response.json();
+        return queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
     }
 
     /**
-     * Download a file by fileId
+     * Liste les fichiers et dossiers (supporte le dossier courant, recherche textuelle ou mode global)
      */
-    public async downloadFile(fileId: string, fileName?: string): Promise<Blob> {
-        const params = new URLSearchParams();
-        params.append("fileId", fileId);
-        params.append("raw", "true");
-        if (fileName) {
-            params.append("fileName", fileName);
-        }
+    public async listFiles(folderId?: string, search?: string, all?: boolean): Promise<ListResponse> {
+        const query = this.buildQueryString({
+            folderId,
+            search,
+            all: all ? "true" : undefined
+        });
 
-        const url = `${this.baseUrl}/download?${params.toString()}`;
+        const url = `${this.baseUrl}/list${query}`;
         const response = await fetch(url, {
             method: "GET",
-            headers: this.getHeaders()
+            headers: {
+                Accept: "application/json",
+                ...this.getAuthorizationHeader()
+            }
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+            throw new Error(`Erreur lors de la récupération des fichiers (${response.status} ${response.statusText})`);
+        }
+
+        const data = (await response.json()) as ListResponse;
+        return {
+            count: data.count || 0,
+            files: Array.isArray(data.files) ? data.files : []
+        };
+    }
+
+    /**
+     * Télécharge le contenu binaire brut d'un fichier (raw=true)
+     */
+    public async downloadFile(fileId: string, fileName?: string): Promise<Blob> {
+        const query = this.buildQueryString({
+            fileId,
+            raw: "true",
+            fileName
+        });
+
+        const url = `${this.baseUrl}/download${query}`;
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                ...this.getAuthorizationHeader()
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur de téléchargement (${response.status} ${response.statusText})`);
         }
 
         return await response.blob();
     }
 
     /**
-     * Upload a new file
+     * Téléverse un nouveau fichier binaire dans le dossier cible
      */
-    public async uploadFile(file: File, folderId?: string, customName?: string): Promise<any> {
-        const params = new URLSearchParams();
-        params.append("fileName", customName || file.name);
-        if (folderId) {
-            params.append("folderId", folderId);
-        }
-
-        const url = `${this.baseUrl}/upload?${params.toString()}`;
-        const headers = this.getHeaders({
-            "Content-Type": file.type || "application/octet-stream"
+    public async uploadFile(file: File, folderId?: string, customName?: string): Promise<DriveApiResponse | string> {
+        const fileName = customName || file.name;
+        const query = this.buildQueryString({
+            fileName,
+            folderId
         });
+
+        const url = `${this.baseUrl}/upload${query}`;
+        const headers: Record<string, string> = {
+            "Content-Type": file.type || "application/octet-stream",
+            ...this.getAuthorizationHeader()
+        };
 
         const arrayBuffer = await file.arrayBuffer();
         const response = await fetch(url, {
@@ -110,78 +147,82 @@ export class CpiDriveService {
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to upload file: ${response.status} ${response.statusText}`);
+            throw new Error(`Échec du téléversement (${response.status} ${response.statusText})`);
         }
 
         const text = await response.text();
         try {
-            return JSON.parse(text);
+            return JSON.parse(text) as DriveApiResponse;
         } catch {
             return text;
         }
     }
 
     /**
-     * Update file name and/or content
+     * Met à jour les métadonnées (nom) et/ou le contenu binaire d'un fichier existant
      */
-    public async updateFile(fileId: string, customName?: string, newFile?: File): Promise<any> {
-        const params = new URLSearchParams();
-        params.append("fileId", fileId);
-        if (customName) {
-            params.append("fileName", customName);
-        }
+    public async updateFile(
+        fileId: string,
+        customName?: string,
+        newFile?: File
+    ): Promise<DriveApiResponse | string> {
+        const query = this.buildQueryString({
+            fileId,
+            fileName: customName
+        });
 
-        const url = `${this.baseUrl}/update?${params.toString()}`;
-        const extraHeaders: Record<string, string> = {};
+        const url = `${this.baseUrl}/update${query}`;
+        const headers: Record<string, string> = {
+            ...this.getAuthorizationHeader()
+        };
+
         let body: ArrayBuffer | undefined;
-
         if (newFile) {
-            extraHeaders["Content-Type"] = newFile.type || "application/octet-stream";
+            headers["Content-Type"] = newFile.type || "application/octet-stream";
             body = await newFile.arrayBuffer();
         }
 
         const response = await fetch(url, {
-            method: "POST", // Note: CPI IFlow accepts http requests routed to update
-            headers: this.getHeaders(extraHeaders),
+            method: "POST",
+            headers,
             body
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to update file: ${response.status} ${response.statusText}`);
+            throw new Error(`Échec de mise à jour (${response.status} ${response.statusText})`);
         }
 
         const text = await response.text();
         try {
-            return JSON.parse(text);
+            return JSON.parse(text) as DriveApiResponse;
         } catch {
             return text;
         }
     }
 
     /**
-     * Delete a file
+     * Supprime définitivement un fichier ou un dossier
      */
-    public async deleteFile(fileId: string): Promise<any> {
-        const params = new URLSearchParams();
-        params.append("fileId", fileId);
+    public async deleteFile(fileId: string): Promise<string> {
+        const query = this.buildQueryString({ fileId });
+        const url = `${this.baseUrl}/delete${query}`;
+        const headers = this.getAuthorizationHeader();
 
-        const url = `${this.baseUrl}/delete?${params.toString()}`;
         const response = await fetch(url, {
             method: "DELETE",
-            headers: this.getHeaders()
+            headers
         });
 
         if (!response.ok) {
-            // Also try POST if DELETE is intercepted/rejected by proxy
-            const fallbackResponse = await fetch(url, {
+            // Re-tentative en méthode POST si le proxy ou pare-feu intercepte DELETE
+            const fallback = await fetch(url, {
                 method: "POST",
-                headers: this.getHeaders()
+                headers
             });
-
-            if (!fallbackResponse.ok) {
-                throw new Error(`Failed to delete file: ${response.status} ${response.statusText}`);
+            if (!fallback.ok) {
+                throw new Error(`Échec de la suppression (${response.status} ${response.statusText})`);
             }
-            return await fallbackResponse.text();
+            return await fallback.text();
         }
 
         return await response.text();

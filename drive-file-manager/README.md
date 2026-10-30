@@ -1,82 +1,49 @@
-# SAP Fiori Google Drive File Manager (SAP CPI Integration)
+# SAP Fiori Google Drive File Manager (drive-file-manager)
 
-Application Fiori (SAPUI5 avec TypeScript) permettant de gérer les fichiers Google Drive via un IFlow SAP Cloud Integration (CPI).
-
----
-
-## 🚀 Fonctionnalités
-- **Gestion des Fichiers & Dossiers** :
-  - Liste interactive des fichiers et dossiers.
-  - Navigation arborescente (dossiers et sous-dossiers) avec fil d'Ariane (Breadcrumbs).
-  - Barre de recherche en temps réel.
-  - Détails d'un fichier (métadonnées, taille, dates, type MIME).
-  - Téléchargement direct des fichiers.
-  - Renommer un fichier / dossier.
-  - Remplacer le contenu d'un fichier (ré-upload).
-  - Suppression de fichiers / dossiers.
-  - Importation (Upload) de nouveaux fichiers.
-- **Tableau de Bord (Dashboard)** :
-  - Cartes KPI : Total éléments, fichiers et dossiers.
-  - Répartition par type de fichier (PDF, Images, Documents, Tableurs, Autres).
-  - Historique par date de modification (Aujourd'hui, 7 jours, 30 jours, Plus anciens).
+Module d'application SAP Fiori (SAPUI5 avec TypeScript) orchestré pour l'environnement **Sandbox SAP Business Application Studio (BAS)**.
 
 ---
 
-## 🛠️ Configuration & Installation
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18+ recommandé)
-- [npm](https://www.npmjs.com/)
-
-### Installation
-1. Accédez au répertoire du projet UI5 :
-   ```bash
-   cd drive-file-manager
-   ```
-2. Installez les dépendances :
-   ```bash
-   npm install
-   ```
+## 👥 Équipe Projet — SAPErp Solution
+- **Consultant Technico-Fonctionnel SAP** : RAMANANTSIRAHONANA ALDINO
+- **Delivery Manager** : SAMel
+- **Manager de Projet** : Flavien
 
 ---
 
-## 💻 Démarrage Local (Development)
+## 🚀 Démarrage Rapide dans la Sandbox BAS
 
-Le projet utilise le proxy `fiori-tools-proxy` dans `ui5-local.yaml` qui redirige les appels vers `/cpi-api` vers l'endpoint CPI :
-`https://178020eetrial.it-cpitrial06-rt.cfapps.us10-001.hana.ondemand.com/http/manage/file/gd/v1/*`
-
-### Lancer l'application avec la sandbox FLP (SAP Fiori Launchpad)
 ```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Lancer l'application dans la Sandbox Fiori Launchpad (FLP)
 npm run start-local
-```
-L'application s'ouvrira sur `http://localhost:8080/test/flp.html#app-preview`.
 
-### Lancer l'application en mode Standalone (Sans FLP)
-```bash
+# OU Lancer en mode Standalone (sans FLP)
 npm run start-noflp
-```
-L'application s'ouvrira sur `http://localhost:8080/index.html`.
 
----
+# 3. Contrôle de typage TypeScript strict
+npm run ts-typecheck
 
-## 🔑 Authentification SAP CPI (Basic Auth)
+# 4. Contrôle ESLint & Clean Code (0 erreur, 0 avertissement)
+npm run lint
 
-L'endpoint CPI requiert une authentification **Basic Auth** (S-User / Client ID et mot de passe CPI).
-L'application gère l'authentification de deux manières :
-1. **Via le navigateur / LocalStorage** :
-   Vous pouvez enregistrer les identifiants dans la console du navigateur si nécessaire :
-   ```javascript
-   localStorage.setItem("cpi_user", "VOTRE_UTILISATEUR_CPI");
-   localStorage.setItem("cpi_pass", "VOTRE_MOT_DE_PASSE_CPI");
-   ```
-2. **Via le Proxy Fiori Tools** (`ui5-local.yaml`) :
-   Vous pouvez configurer directement les identifiants dans `ui5-local.yaml` sous la section `backend`.
-
----
-
-## 📦 Compilation & Build
-Pour vérifier les types TypeScript et compiler l'application pour la production :
-```bash
+# 5. Compilation de test
 npm run build
 ```
-Les fichiers générés se trouveront dans le dossier `dist/`.
+
+---
+
+## 🛠️ Configuration du Proxy CPI
+Le proxy de développement est configuré dans [ui5-local.yaml](./ui5-local.yaml) et redirige tous les appels `/cpi-api/*` vers l'instance SAP Integration Suite :
+`https://178020eetrial.it-cpitrial06-rt.cfapps.us10-001.hana.ondemand.com/http/manage/file/gd/v1`
+
+---
+
+## 📋 Fonctionnalités Validées en Sandbox
+1. **Exploration & Navigation** : Fil d'Ariane, section dossiers en grille fluide, vue Grille et vue Tableau.
+2. **Double Thème** : Mode Sombre (*Midnight Slate*) et Mode Clair Fiori Horizon avec bouton de bascule dynamique dans l'en-tête.
+3. **Opérations Complètes (CRUD)** : Consultation, téléchargement binaire raw, renommage, mise à jour du contenu, suppression, téléversement de fichier.
+4. **Tableau de Bord** : Tuiles récapitulatives et ventilation par typologie et date.
+5. **Localisation /fr** : Interface et formatages standardisés en français.

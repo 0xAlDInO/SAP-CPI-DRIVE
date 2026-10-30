@@ -15,149 +15,249 @@ import Breadcrumbs from "sap/m/Breadcrumbs";
 import Link from "sap/m/Link";
 import Select from "sap/m/Select";
 import SearchField from "sap/m/SearchField";
-import Event from "sap/ui/base/Event";
+import ListBinding from "sap/ui/model/ListBinding";
+import Table from "sap/m/Table";
 import Control from "sap/ui/core/Control";
+import UI5Event from "sap/ui/base/Event";
+import Theming from "sap/ui/core/Theming";
+import CustomListItem from "sap/m/CustomListItem";
 import { CpiDriveService, DriveFile } from "../model/CpiDriveService";
+import Formatter from "../model/formatter";
 
 interface FolderBreadcrumb {
     id: string;
     name: string;
 }
 
+interface StatsByType {
+    category: string;
+    count: number;
+    icon: string;
+}
+
+interface StatsByDate {
+    period: string;
+    count: number;
+}
+
+interface DashboardCounts {
+    totalFiles: number;
+    totalFolders: number;
+    pdfCount: number;
+    imgCount: number;
+    docCount: number;
+    sheetCount: number;
+    archiveCount: number;
+    pptCount: number;
+    videoCount: number;
+    otherCount: number;
+    modToday: number;
+    modWeek: number;
+    modMonth: number;
+    modOlder: number;
+}
+
 /**
+ * Contrôleur principal pour l'application Fiori Google Drive File Manager
  * @namespace poc.cpi.ral.drivefilemanager.controller
  */
 export default class Drive extends Controller {
-    private driveService: CpiDriveService;
+    public formatter = Formatter;
+
+    private static currentTheme = "sap_horizon";
+    private driveService: CpiDriveService = new CpiDriveService();
     private currentFolderHistory: FolderBreadcrumb[] = [];
     private actionSheetItem?: DriveFile;
+
+    public formatFileSize(bytes?: number | null): string {
+        return Formatter.formatFileSize(bytes);
+    }
+
+    public formatDate(dateStr?: string): string {
+        return Formatter.formatDate(dateStr);
+    }
+
+    public formatFileIcon(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        return Formatter.formatFileIcon(isFolder, mimeType, fileName);
+    }
+
+    public formatFileIconColor(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        return Formatter.formatFileIconColor(isFolder, mimeType, fileName);
+    }
+
+    public formatFileTypeBadge(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        return Formatter.formatFileTypeBadge(isFolder, mimeType, fileName);
+    }
+
+    public formatCardBgClass(isFolder?: boolean, mimeType?: string, fileName?: string): string {
+        return Formatter.formatCardBgClass(isFolder, mimeType, fileName);
+    }
+
+    /**
+     * Formatte le label de statistique : "N fichiers (X%)"
+     */
+    public formatStatLabel(count: number, percent: number): string {
+        return `${count} fichier${count > 1 ? "s" : ""} (${percent}%)`;
+    }
 
     public onInit(): void {
         this.driveService = new CpiDriveService();
 
-        // Initialize Drive JSON Model
+        // Initialisation du modèle Drive principal
         const driveModel = new JSONModel({
-            files: [],
-            folders: [],
-            filesOnly: [],
-            allFiles: [],
+            files: [] as DriveFile[],
+            folders: [] as DriveFile[],
+            filesOnly: [] as DriveFile[],
+            allFiles: [] as DriveFile[],
             currentFolderId: "",
-            busy: false
+            busy: false,
+            isDarkMode: false,
+            themeIcon: "sap-icon://dark-mode",
+            themeText: "Mode Sombre"
         });
         this.getView()?.setModel(driveModel, "drive");
 
-        // Initialize Stats / Dashboard Model
+        // Initialisation du modèle Statistiques / Dashboard
         const statsModel = new JSONModel({
             totalItems: 0,
             totalFiles: 0,
             totalFolders: 0,
-            byType: [],
-            byDate: []
+            byType: [] as StatsByType[],
+            byDate: [] as StatsByDate[]
         });
         this.getView()?.setModel(statsModel, "stats");
 
-        // Load Initial Data
-        this.loadDriveData();
-        this.loadDashboardData();
+        // Initialisation du Thème
+        this.initThemeState();
+
+        // Chargement initial des données Drive et du Dashboard
+        void this.loadDriveData();
+        void this.loadDashboardData();
     }
 
     /**
-     * Load list of files from CPI for current folder view
+     * Initialise l'état du thème clair / sombre
+     */
+    private initThemeState(): void {
+        Theming.setTheme(Drive.currentTheme);
+        this.updateThemeModel(Drive.currentTheme);
+    }
+
+    /**
+     * Met à jour les propriétés du modèle relatives au thème
+     */
+    private updateThemeModel(theme: string): void {
+        const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+        if (!driveModel) {
+            return;
+        }
+
+        const isDark = theme.includes("dark");
+        driveModel.setProperty("/isDarkMode", isDark);
+        driveModel.setProperty("/themeIcon", isDark ? "sap-icon://light-mode" : "sap-icon://dark-mode");
+        driveModel.setProperty("/themeText", isDark ? "Mode Clair" : "Mode Sombre");
+
+        // Application de la classe sur la vue SAPUI5
+        const view = this.getView();
+        if (view) {
+            if (isDark) {
+                view.addStyleClass("appDarkMode");
+                view.removeStyleClass("appLightMode");
+            } else {
+                view.addStyleClass("appLightMode");
+                view.removeStyleClass("appDarkMode");
+            }
+        }
+    }
+
+    /**
+     * Bascule dynamique entre le thème clair et le thème sombre
+     */
+    public onToggleTheme(): void {
+        const current = Theming.getTheme() || "sap_horizon";
+        const nextTheme = current.includes("dark") ? "sap_horizon" : "sap_horizon_dark";
+
+        Drive.currentTheme = nextTheme;
+        Theming.setTheme(nextTheme);
+        this.updateThemeModel(nextTheme);
+
+        MessageToast.show(nextTheme.includes("dark") ? "Thème sombre activé" : "Thème clair activé");
+    }
+
+    /**
+     * Charge la liste des fichiers depuis le CPI pour le dossier courant
      */
     public async loadDriveData(folderId?: string): Promise<void> {
-        const driveModel = this.getView()?.getModel("drive") as JSONModel;
-        driveModel.setProperty("/busy", true);
+        const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+        if (driveModel) {
+            driveModel.setProperty("/busy", true);
+        }
 
         try {
             const data = await this.driveService.listFiles(folderId);
             const files: DriveFile[] = data.files || [];
 
-            const folders = files.filter(f => f.isFolder);
-            const filesOnly = files.filter(f => !f.isFolder);
-
-            driveModel.setProperty("/files", files);
-            driveModel.setProperty("/currentFolderId", folderId || "");
+            if (driveModel) {
+                driveModel.setProperty("/files", files);
+                driveModel.setProperty("/currentFolderId", folderId || "");
+            }
 
             this.applySortAndFilter();
-        } catch (error: any) {
-            MessageBox.error("Erreur de chargement : " + (error.message || error));
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : String(error);
+            MessageBox.error(`Erreur de chargement des fichiers : ${errMsg}`);
         } finally {
-            driveModel.setProperty("/busy", false);
+            if (driveModel) {
+                driveModel.setProperty("/busy", false);
+            }
         }
     }
 
     /**
-     * Event Handler for Sort Dropdown Change
+     * Gestionnaire d'événement de changement de tri
      */
     public onSortSelect(): void {
         this.applySortAndFilter();
     }
 
     /**
-     * Sort and filter drive model data based on current search and selected sort option
+     * Recherche instantanée
+     */
+    public onSearchLive(): void {
+        this.applySortAndFilter();
+    }
+
+    /**
+     * Applique le tri et le filtre textuel
      */
     private applySortAndFilter(): void {
-        const driveModel = this.getView()?.getModel("drive") as JSONModel;
-        const allFiles: DriveFile[] = driveModel.getProperty("/files") || [];
-
-        const searchField = this.byId("searchField") as SearchField;
-        const query = (searchField ? searchField.getValue() : "").toLowerCase().trim();
-
-        const sortSelect = this.byId("sortSelect") as Select;
-        const sortKey = sortSelect ? sortSelect.getSelectedKey() : "nameAsc";
-
-        // Filter files by search query
-        let filtered = allFiles;
-        if (query) {
-            filtered = allFiles.filter(f => f.name.toLowerCase().includes(query));
+        const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+        if (!driveModel) {
+            return;
         }
 
-        // Sort function
-        const compareFiles = (a: DriveFile, b: DriveFile): number => {
-            switch (sortKey) {
-                case "nameAsc":
-                    return a.name.localeCompare(b.name);
-                case "nameDesc":
-                    return b.name.localeCompare(a.name);
-                case "modDesc": {
-                    const tA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
-                    const tB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
-                    return tB - tA;
-                }
-                case "modAsc": {
-                    const tA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
-                    const tB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
-                    return tA - tB;
-                }
-                case "createdDesc": {
-                    const cA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
-                    const cB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
-                    return cB - cA;
-                }
-                case "createdAsc": {
-                    const cA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
-                    const cB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
-                    return cA - cB;
-                }
-                case "sizeDesc":
-                    return (b.size || 0) - (a.size || 0);
-                case "sizeAsc":
-                    return (a.size || 0) - (b.size || 0);
-                default:
-                    return a.name.localeCompare(b.name);
-            }
-        };
+        const allFiles = (driveModel.getProperty("/files") as DriveFile[]) || [];
+        const searchField = this.byId("searchField") as SearchField | undefined;
+        const query = (searchField ? searchField.getValue() : "").toLowerCase().trim();
 
-        const sortedFolders = filtered.filter(f => f.isFolder).sort(compareFiles);
-        const sortedFiles = filtered.filter(f => !f.isFolder).sort(compareFiles);
+        const sortSelect = this.byId("sortSelect") as Select | undefined;
+        const sortKey = sortSelect ? sortSelect.getSelectedKey() : "nameAsc";
+
+        let filtered = allFiles;
+        if (query) {
+            filtered = allFiles.filter((f) => f.name.toLowerCase().includes(query));
+        }
+
+        const sortedFolders = filtered.filter((f) => f.isFolder).sort((a, b) => this.compareFiles(a, b, sortKey));
+        const sortedFiles = filtered.filter((f) => !f.isFolder).sort((a, b) => this.compareFiles(a, b, sortKey));
 
         driveModel.setProperty("/folders", sortedFolders);
         driveModel.setProperty("/filesOnly", sortedFiles);
 
-        // Update Table Binding
-        const table = this.byId("filesTable") as any;
+        // Mise à jour du binding du tableau
+        const table = this.byId("filesTable") as Table | undefined;
         if (table) {
-            const binding = table.getBinding("items");
+            const binding = table.getBinding("items") as ListBinding | undefined;
             if (binding) {
                 if (query) {
                     binding.filter([new Filter("name", FilterOperator.Contains, query)]);
@@ -169,206 +269,266 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Load all files across entire Google Drive for the Dashboard
+     * Algorithme de comparaison pour le tri
+     */
+    private compareFiles(a: DriveFile, b: DriveFile, sortKey: string): number {
+        if (sortKey === "nameAsc") {
+            return a.name.localeCompare(b.name, "fr");
+        }
+        if (sortKey === "nameDesc") {
+            return b.name.localeCompare(a.name, "fr");
+        }
+        if (sortKey === "modDesc" || sortKey === "modAsc") {
+            const tA = a.modifiedTime ? new Date(a.modifiedTime).getTime() : 0;
+            const tB = b.modifiedTime ? new Date(b.modifiedTime).getTime() : 0;
+            return sortKey === "modDesc" ? tB - tA : tA - tB;
+        }
+        if (sortKey === "createdDesc" || sortKey === "createdAsc") {
+            const cA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+            const cB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+            return sortKey === "createdDesc" ? cB - cA : cA - cB;
+        }
+        if (sortKey === "sizeDesc") {
+            return (b.size || 0) - (a.size || 0);
+        }
+        if (sortKey === "sizeAsc") {
+            return (a.size || 0) - (b.size || 0);
+        }
+        return a.name.localeCompare(b.name, "fr");
+    }
+
+    /**
+     * Charge l'ensemble des fichiers pour alimenter les KPIs du tableau de bord
      */
     public async loadDashboardData(): Promise<void> {
         try {
             const allData = await this.driveService.listFiles(undefined, undefined, true);
             const allFiles: DriveFile[] = allData.files || [];
-            const driveModel = this.getView()?.getModel("drive") as JSONModel;
-            driveModel.setProperty("/allFiles", allFiles);
+            const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+            if (driveModel) {
+                driveModel.setProperty("/allFiles", allFiles);
+            }
 
             this.updateDashboardStats(allFiles);
-        } catch (error: any) {
-            // Dashboard load error
+        } catch {
+            // Tolérance d'échec silencieuse pour le tableau de bord
         }
     }
 
     /**
-     * Compute and update statistics for the Dashboard
+     * Calcule et met à jour les indicateurs du Dashboard
      */
     private updateDashboardStats(files: DriveFile[]): void {
-        const statsModel = this.getView()?.getModel("stats") as JSONModel;
+        const statsModel = this.getView()?.getModel("stats") as JSONModel | undefined;
+        if (!statsModel) {
+            return;
+        }
 
-        const totalItems = files.length;
-        let totalFiles = 0;
-        let totalFolders = 0;
+        const counts: DashboardCounts = {
+            totalFiles: 0,
+            totalFolders: 0,
+            pdfCount: 0,
+            imgCount: 0,
+            docCount: 0,
+            sheetCount: 0,
+            archiveCount: 0,
+            pptCount: 0,
+            videoCount: 0,
+            otherCount: 0,
+            modToday: 0,
+            modWeek: 0,
+            modMonth: 0,
+            modOlder: 0
+        };
 
-        let pdfCount = 0;
-        let imgCount = 0;
-        let docCount = 0;
-        let sheetCount = 0;
-        let otherCount = 0;
-
-        let modToday = 0;
-        let modWeek = 0;
-        let modMonth = 0;
-        let modOlder = 0;
-
-        const now = new Date().getTime();
+        const now = Date.now();
         const oneDayMs = 24 * 60 * 60 * 1000;
 
-        files.forEach((file) => {
-            if (file.isFolder) {
-                totalFolders++;
-            } else {
-                totalFiles++;
+        for (const file of files) {
+            this.classifyFile(file, counts);
+            this.classifyDate(file.modifiedTime, now, oneDayMs, counts);
+        }
 
-                // By Type
-                const mime = (file.mimeType || "").toLowerCase();
-                if (mime.includes("pdf")) {
-                    pdfCount++;
-                } else if (mime.includes("image") || mime.includes("png") || mime.includes("jpeg")) {
-                    imgCount++;
-                } else if (mime.includes("word") || mime.includes("document") || mime.includes("text")) {
-                    docCount++;
-                } else if (mime.includes("excel") || mime.includes("spreadsheet") || mime.includes("csv")) {
-                    sheetCount++;
-                } else {
-                    otherCount++;
-                }
-            }
-
-            // By Date
-            if (file.modifiedTime) {
-                const modTime = new Date(file.modifiedTime).getTime();
-                const diffDays = (now - modTime) / oneDayMs;
-
-                if (diffDays <= 1) {
-                    modToday++;
-                } else if (diffDays <= 7) {
-                    modWeek++;
-                } else if (diffDays <= 30) {
-                    modMonth++;
-                } else {
-                    modOlder++;
-                }
-            }
-        });
+        const total = counts.totalFiles || 1; // éviter division par 0
+        const pct = (n: number): number => Math.round((n / total) * 100);
 
         statsModel.setData({
-            totalItems,
-            totalFiles,
-            totalFolders,
+            totalItems: files.length,
+            totalFiles: counts.totalFiles,
+            totalFolders: counts.totalFolders,
+            // KPIs individuels par type
+            pdfCount: counts.pdfCount,
+            imgCount: counts.imgCount,
+            docCount: counts.docCount,
+            sheetCount: counts.sheetCount,
+            archiveCount: counts.archiveCount,
+            pptCount: counts.pptCount,
+            videoCount: counts.videoCount,
+            otherCount: counts.otherCount,
+            // Pourcentages (0-100)
+            pdfPercent: pct(counts.pdfCount),
+            imgPercent: pct(counts.imgCount),
+            docPercent: pct(counts.docCount),
+            sheetPercent: pct(counts.sheetCount),
+            archivePercent: pct(counts.archiveCount),
+            pptPercent: pct(counts.pptCount),
+            videoPercent: pct(counts.videoCount),
+            otherPercent: pct(counts.otherCount),
             byType: [
-                { category: "Dossiers", count: totalFolders, icon: "sap-icon://folder-blank" },
-                { category: "PDF", count: pdfCount, icon: "sap-icon://pdf-attachment" },
-                { category: "Images", count: imgCount, icon: "sap-icon://attachment-photo" },
-                { category: "Documents Textes/Word", count: docCount, icon: "sap-icon://document" },
-                { category: "Tableurs Excel/CSV", count: sheetCount, icon: "sap-icon://excel-attachment" },
-                { category: "Autres", count: otherCount, icon: "sap-icon://document-text" }
+                { category: "Dossiers", count: counts.totalFolders, icon: "sap-icon://folder-blank" },
+                { category: "Documents PDF", count: counts.pdfCount, icon: "sap-icon://pdf-attachment" },
+                { category: "Images & Photos", count: counts.imgCount, icon: "sap-icon://attachment-photo" },
+                { category: "Documents Texte / Word", count: counts.docCount, icon: "sap-icon://document" },
+                { category: "Tableurs Excel / CSV", count: counts.sheetCount, icon: "sap-icon://excel-attachment" },
+                { category: "Archives (ZIP/RAR)", count: counts.archiveCount, icon: "sap-icon://attachment-zip-file" },
+                { category: "Présentations", count: counts.pptCount, icon: "sap-icon://ppt-attachment" },
+                { category: "Vidéos", count: counts.videoCount, icon: "sap-icon://video" },
+                { category: "Autres Fichiers", count: counts.otherCount, icon: "sap-icon://document-text" }
             ],
             byDate: [
-                { period: "Aujourd'hui", count: modToday },
-                { period: "Cette semaine (7 jours)", count: modWeek },
-                { period: "Ce mois-ci (30 jours)", count: modMonth },
-                { period: "Plus anciens", count: modOlder }
+                { period: "Aujourd'hui", count: counts.modToday },
+                { period: "Cette semaine (7 jours)", count: counts.modWeek },
+                { period: "Ce mois-ci (30 jours)", count: counts.modMonth },
+                { period: "Plus anciens", count: counts.modOlder }
             ]
         });
     }
 
+    private classifyFile(file: DriveFile, counts: DashboardCounts): void {
+        if (file.isFolder) {
+            counts.totalFolders++;
+            return;
+        }
+
+        counts.totalFiles++;
+        const mime = (file.mimeType || "").toLowerCase();
+        const name = (file.name || "").toLowerCase();
+
+        if (mime.includes("pdf") || name.endsWith(".pdf")) {
+            counts.pdfCount++;
+        } else if (mime.includes("image") || /\.(png|jpg|jpeg|gif|svg|webp|bmp|tiff)$/.test(name)) {
+            counts.imgCount++;
+        } else if (mime.includes("sheet") || mime.includes("excel") || /\.(xls|xlsx|csv|ods)$/.test(name)) {
+            counts.sheetCount++;
+        } else if (mime.includes("presentation") || mime.includes("powerpoint") || /\.(ppt|pptx|odp)$/.test(name)) {
+            counts.pptCount++;
+        } else if (mime.includes("word") || mime.includes("document") || /\.(doc|docx|txt|rtf|odt)$/.test(name)) {
+            counts.docCount++;
+        } else if (/\.(zip|rar|7z|tar|gz|bz2|xz)$/.test(name) || mime.includes("zip") || mime.includes("compressed") || mime.includes("archive")) {
+            counts.archiveCount++;
+        } else if (mime.includes("video") || /\.(mp4|avi|mkv|mov|wmv|flv|webm|m4v)$/.test(name)) {
+            counts.videoCount++;
+        } else {
+            counts.otherCount++;
+        }
+    }
+
+    private classifyDate(dateStr: string | undefined, now: number, oneDayMs: number, counts: DashboardCounts): void {
+        if (!dateStr) {
+            return;
+        }
+        const modTime = new Date(dateStr).getTime();
+        const diffDays = (now - modTime) / oneDayMs;
+
+        if (diffDays <= 1) {
+            counts.modToday++;
+        } else if (diffDays <= 7) {
+            counts.modWeek++;
+        } else if (diffDays <= 30) {
+            counts.modMonth++;
+        } else {
+            counts.modOlder++;
+        }
+    }
+
     /**
-     * Refresh data
+     * Actualise les données du dossier courant et du dashboard
      */
     public onRefresh(): void {
-        const driveModel = this.getView()?.getModel("drive") as JSONModel;
-        const currentFolderId = driveModel.getProperty("/currentFolderId");
-        this.loadDriveData(currentFolderId);
-        this.loadDashboardData();
+        const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+        const currentFolderId = (driveModel?.getProperty("/currentFolderId") as string) || "";
+        void this.loadDriveData(currentFolderId);
+        void this.loadDashboardData();
     }
 
     /**
-     * Tab Selection Event
+     * Sélection d'onglet (Drive ou Dashboard)
      */
-    public onTabSelect(event: Event): void {
-        const params = event.getParameters() as any;
-        const key = params?.key;
-        if (key === "dashboard") {
-            this.loadDashboardData();
+    public onTabSelect(event: UI5Event): void {
+        const params = event.getParameters() as { key?: string };
+        if (params.key === "dashboard") {
+            void this.loadDashboardData();
         }
     }
 
     /**
-     * Layout Change (Grid vs Table)
+     * Bascule entre la vue Grille et la vue Tableau
      */
-    public onLayoutChange(event: Event): void {
-        const params = event.getParameters() as any;
-        const key = params?.key || params?.selectedItem?.getKey() || params?.item?.getKey();
-        const gridView = this.byId("gridView") as Control;
-        const filesTable = this.byId("filesTable") as Control;
+    public onLayoutChange(event: UI5Event): void {
+        const params = event.getParameters() as { item?: Control };
+        const key = params.item?.getId().includes("table") ? "table" : "grid";
+        const gridView = this.byId("gridView") as Control | undefined;
+        const filesTable = this.byId("filesTable") as Control | undefined;
 
-        if (key === "table") {
-            gridView.setVisible(false);
-            filesTable.setVisible(true);
-        } else {
-            // Default or 'grid'
-            gridView.setVisible(true);
-            filesTable.setVisible(false);
+        if (gridView && filesTable) {
+            const isTable = key === "table";
+            gridView.setVisible(!isTable);
+            filesTable.setVisible(isTable);
         }
     }
 
     /**
-     * Handle folder chip press
+     * Navigation dans un sous-dossier depuis la vue grille
      */
-    public onFolderPress(event: Event): void {
-        const item = event.getSource() as any;
+    public onFolderPress(event: UI5Event): void {
+        const item = event.getSource<CustomListItem>();
         const context = item.getBindingContext("drive");
-        const folder: DriveFile = context ? context.getObject() : null;
+        const folder = context?.getObject() as DriveFile | undefined;
 
-        if (folder && folder.isFolder) {
-            this.currentFolderHistory.push({
-                id: folder.id,
-                name: folder.name
-            });
+        if (folder?.isFolder) {
+            this.currentFolderHistory.push({ id: folder.id, name: folder.name });
             this.updateBreadcrumbs();
-            this.loadDriveData(folder.id);
+            void this.loadDriveData(folder.id);
         }
     }
 
     /**
-     * Search filtering
+     * Navigation dans un sous-dossier depuis la vue tableau
      */
-    public onSearchLive(): void {
-        this.applySortAndFilter();
-    }
+    public onItemPress(event: UI5Event): void {
+        const item = event.getSource<Control>();
+        const context = item.getBindingContext("drive");
+        const file = context?.getObject() as DriveFile | undefined;
 
-    /**
-     * Handle item click (drill into folder)
-     */
-    public onItemPress(event: Event): void {
-        const listItem = event.getSource() as any;
-        const context = listItem.getBindingContext("drive");
-        const file: DriveFile = context ? context.getObject() : null;
-
-        if (file && file.isFolder) {
-            this.currentFolderHistory.push({
-                id: file.id,
-                name: file.name
-            });
+        if (file?.isFolder) {
+            this.currentFolderHistory.push({ id: file.id, name: file.name });
             this.updateBreadcrumbs();
-            this.loadDriveData(file.id);
+            void this.loadDriveData(file.id);
         }
     }
 
     /**
-     * Navigate up to parent folder
+     * Remonte au dossier parent
      */
     public onNavUp(): void {
         if (this.currentFolderHistory.length > 0) {
             this.currentFolderHistory.pop();
             const parent = this.currentFolderHistory[this.currentFolderHistory.length - 1];
             this.updateBreadcrumbs();
-            this.loadDriveData(parent ? parent.id : undefined);
+            void this.loadDriveData(parent ? parent.id : undefined);
         }
     }
 
     /**
-     * Update Breadcrumb controls
+     * Met à jour le fil d'Ariane
      */
     private updateBreadcrumbs(): void {
-        const breadcrumbs = this.byId("breadcrumbs") as Breadcrumbs;
-        breadcrumbs.removeAllLinks();
+        const breadcrumbs = this.byId("breadcrumbs") as Breadcrumbs | undefined;
+        if (!breadcrumbs) {
+            return;
+        }
 
+        breadcrumbs.removeAllLinks();
         this.currentFolderHistory.forEach((folder, index) => {
             const isLast = index === this.currentFolderHistory.length - 1;
             if (!isLast) {
@@ -377,7 +537,7 @@ export default class Drive extends Controller {
                     press: () => {
                         this.currentFolderHistory = this.currentFolderHistory.slice(0, index + 1);
                         this.updateBreadcrumbs();
-                        this.loadDriveData(folder.id);
+                        void this.loadDriveData(folder.id);
                     }
                 });
                 breadcrumbs.addLink(link);
@@ -385,26 +545,30 @@ export default class Drive extends Controller {
         });
 
         if (this.currentFolderHistory.length > 0) {
-            const lastFolder = this.currentFolderHistory[this.currentFolderHistory.length - 1];
-            breadcrumbs.setCurrentLocationText(lastFolder.name);
+            const last = this.currentFolderHistory[this.currentFolderHistory.length - 1];
+            breadcrumbs.setCurrentLocationText(last.name);
         } else {
             breadcrumbs.setCurrentLocationText("Mon Drive");
         }
 
-        const btnUp = this.byId("btnUp") as Button;
-        btnUp.setEnabled(this.currentFolderHistory.length > 0);
+        const btnUp = this.byId("btnUp") as Button | undefined;
+        if (btnUp) {
+            btnUp.setEnabled(this.currentFolderHistory.length > 0);
+        }
     }
 
     /**
-     * Open ActionSheet for 3 dots button
+     * Ouvre le menu d'actions contextuel (3 points)
      */
-    public onOpenActionSheet(event: Event): void {
-        const button = event.getSource() as Button;
+    public onOpenActionSheet(event: UI5Event): void {
+        const button = event.getSource<Button>();
         const context = button.getBindingContext("drive");
         if (!context) {
             return;
         }
+
         this.actionSheetItem = context.getObject() as DriveFile;
+        const isFolder = Boolean(this.actionSheetItem?.isFolder);
 
         const actionSheet = new ActionSheet({
             title: "Actions",
@@ -412,30 +576,50 @@ export default class Drive extends Controller {
                 new Button({
                     text: "Détails",
                     icon: "sap-icon://hint",
-                    press: () => this.onShowDetails(this.actionSheetItem!)
+                    press: () => {
+                        if (this.actionSheetItem) {
+                            this.showDetailsDialog(this.actionSheetItem);
+                        }
+                    }
                 }),
                 new Button({
                     text: "Télécharger",
                     icon: "sap-icon://download",
-                    visible: !this.actionSheetItem?.isFolder,
-                    press: () => this.onDownloadFile(this.actionSheetItem!)
+                    visible: !isFolder,
+                    press: () => {
+                        if (this.actionSheetItem) {
+                            void this.downloadFileAction(this.actionSheetItem);
+                        }
+                    }
                 }),
                 new Button({
                     text: "Renommer",
                     icon: "sap-icon://edit",
-                    press: () => this.onOpenRenameDialog(this.actionSheetItem!)
+                    press: () => {
+                        if (this.actionSheetItem) {
+                            this.openRenameDialog(this.actionSheetItem);
+                        }
+                    }
                 }),
                 new Button({
                     text: "Remplacer le contenu",
                     icon: "sap-icon://attachment",
-                    visible: !this.actionSheetItem?.isFolder,
-                    press: () => this.onOpenUpdateContentDialog(this.actionSheetItem!)
+                    visible: !isFolder,
+                    press: () => {
+                        if (this.actionSheetItem) {
+                            this.openUpdateContentDialog(this.actionSheetItem);
+                        }
+                    }
                 }),
                 new Button({
                     text: "Supprimer",
                     icon: "sap-icon://delete",
                     type: "Reject",
-                    press: () => this.onDeleteFile(this.actionSheetItem!)
+                    press: () => {
+                        if (this.actionSheetItem) {
+                            this.deleteFileAction(this.actionSheetItem);
+                        }
+                    }
                 })
             ]
         });
@@ -444,56 +628,28 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Show File Details Dialog
+     * Affiche les métadonnées détaillées du document
      */
-    public onShowDetails(file: DriveFile): void {
+    private showDetailsDialog(file: DriveFile): void {
         const vbox = new VBox();
         vbox.addStyleClass("sapUiSmallMargin");
 
-        const lblNameHeader = new Label({ text: "Nom :" });
-        lblNameHeader.setDesign("Bold");
-        const lblNameValue = new Label({ text: file.name });
+        const addField = (header: string, val: string): void => {
+            const lbl = new Label({ text: header, design: "Bold" });
+            const txt = new Label({ text: val });
+            vbox.addItem(lbl);
+            vbox.addItem(txt);
+        };
 
-        const lblIdHeader = new Label({ text: "ID :" });
-        lblIdHeader.setDesign("Bold");
-        lblIdHeader.addStyleClass("sapUiTinyMarginTop");
-        const lblIdValue = new Label({ text: file.id });
-
-        const lblMimeHeader = new Label({ text: "Type MIME :" });
-        lblMimeHeader.setDesign("Bold");
-        lblMimeHeader.addStyleClass("sapUiTinyMarginTop");
-        const lblMimeValue = new Label({ text: file.mimeType || "Dossier" });
-
-        const lblSizeHeader = new Label({ text: "Taille :" });
-        lblSizeHeader.setDesign("Bold");
-        lblSizeHeader.addStyleClass("sapUiTinyMarginTop");
-        const lblSizeValue = new Label({ text: this.formatFileSize(file.size) });
-
-        const lblCreatedHeader = new Label({ text: "Créé le :" });
-        lblCreatedHeader.setDesign("Bold");
-        lblCreatedHeader.addStyleClass("sapUiTinyMarginTop");
-        const lblCreatedValue = new Label({ text: this.formatDate(file.createdTime) });
-
-        const lblModifiedHeader = new Label({ text: "Modifié le :" });
-        lblModifiedHeader.setDesign("Bold");
-        lblModifiedHeader.addStyleClass("sapUiTinyMarginTop");
-        const lblModifiedValue = new Label({ text: this.formatDate(file.modifiedTime) });
-
-        vbox.addItem(lblNameHeader);
-        vbox.addItem(lblNameValue);
-        vbox.addItem(lblIdHeader);
-        vbox.addItem(lblIdValue);
-        vbox.addItem(lblMimeHeader);
-        vbox.addItem(lblMimeValue);
-        vbox.addItem(lblSizeHeader);
-        vbox.addItem(lblSizeValue);
-        vbox.addItem(lblCreatedHeader);
-        vbox.addItem(lblCreatedValue);
-        vbox.addItem(lblModifiedHeader);
-        vbox.addItem(lblModifiedValue);
+        addField("Nom :", file.name);
+        addField("Identifiant Google Drive :", file.id);
+        addField("Type MIME :", file.mimeType || (file.isFolder ? "Dossier" : "Fichier"));
+        addField("Taille :", Formatter.formatFileSize(file.size));
+        addField("Date de création :", Formatter.formatDate(file.createdTime));
+        addField("Dernière modification :", Formatter.formatDate(file.modifiedTime));
 
         const dialog = new Dialog({
-            title: "Détails du Fichier",
+            title: "Détails du Document",
             content: [vbox],
             endButton: new Button({
                 text: "Fermer",
@@ -506,68 +662,77 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Download File
+     * Téléchargement direct du fichier
      */
-    public async onDownloadFile(file: DriveFile): Promise<void> {
+    private async downloadFileAction(file: DriveFile): Promise<void> {
         try {
             MessageToast.show("Téléchargement en cours...");
             const blob = await this.driveService.downloadFile(file.id, file.name);
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = file.name;
+            link.click();
             window.URL.revokeObjectURL(url);
-        } catch (error: any) {
-            MessageBox.error("Erreur de téléchargement : " + (error.message || error));
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : String(error);
+            MessageBox.error(`Erreur de téléchargement : ${errMsg}`);
         }
     }
 
     /**
-     * Open Upload Dialog
+     * Boîte de dialogue de téléversement
      */
     public onOpenUploadDialog(): void {
         const fileUploader = new FileUploader({
             width: "100%",
-            placeholder: "Choisissez un fichier..."
+            placeholder: "Sélectionnez un fichier..."
+        });
+
+        const customNameInput = new Input({
+            placeholder: "Nom personnalisé (optionnel)"
         });
 
         const vbox = new VBox();
         vbox.addStyleClass("sapUiSmallMargin");
-        vbox.addItem(new Label({ text: "Sélectionnez le fichier à importer :" }));
+        vbox.addItem(new Label({ text: "Fichier à importer :" }));
         vbox.addItem(fileUploader);
+        vbox.addItem(new Label({ text: "Nom optionnel du document :" }));
+        vbox.addItem(customNameInput);
 
         const dialog = new Dialog({
-            title: "Importer un fichier",
+            title: "Importer un Document",
             content: [vbox],
             beginButton: new Button({
                 text: "Importer",
                 type: "Emphasized",
-                press: async () => {
-                    const domRef = fileUploader.getFocusDomRef() as HTMLInputElement;
-                    const files = domRef ? domRef.files : null;
+                press: () => {
+                    const domRef = fileUploader.getFocusDomRef() as HTMLInputElement | null;
+                    const files = domRef?.files;
 
                     if (!files || files.length === 0) {
-                        MessageBox.warning("Veuillez sélectionner un fichier.");
+                        MessageBox.warning("Veuillez choisir un fichier à importer.");
                         return;
                     }
 
                     const selectedFile = files[0];
+                    const customName = customNameInput.getValue().trim();
                     dialog.close();
 
-                    try {
-                        MessageToast.show("Importation en cours...");
-                        const driveModel = this.getView()?.getModel("drive") as JSONModel;
-                        const currentFolderId = driveModel.getProperty("/currentFolderId");
+                    void (async () => {
+                        try {
+                            MessageToast.show("Téléversement en cours...");
+                            const driveModel = this.getView()?.getModel("drive") as JSONModel | undefined;
+                            const folderId = (driveModel?.getProperty("/currentFolderId") as string) || "";
 
-                        await this.driveService.uploadFile(selectedFile, currentFolderId);
-                        MessageToast.show("Fichier importé avec succès !");
-                        this.onRefresh();
-                    } catch (error: any) {
-                        MessageBox.error("Erreur lors de l'import : " + (error.message || error));
-                    }
+                            await this.driveService.uploadFile(selectedFile, folderId, customName || undefined);
+                            MessageToast.show("Document importé avec succès !");
+                            this.onRefresh();
+                        } catch (err: unknown) {
+                            const msg = err instanceof Error ? err.message : String(err);
+                            MessageBox.error(`Erreur lors de l'import : ${msg}`);
+                        }
+                    })();
                 }
             }),
             endButton: new Button({
@@ -581,25 +746,22 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Open Rename Dialog
+     * Boîte de dialogue pour renommer un fichier
      */
-    public onOpenRenameDialog(file: DriveFile): void {
-        const nameInput = new Input({
-            value: file.name
-        });
-
+    private openRenameDialog(file: DriveFile): void {
+        const nameInput = new Input({ value: file.name });
         const vbox = new VBox();
         vbox.addStyleClass("sapUiSmallMargin");
         vbox.addItem(new Label({ text: "Nouveau nom :" }));
         vbox.addItem(nameInput);
 
         const dialog = new Dialog({
-            title: "Renommer le fichier",
+            title: "Renommer",
             content: [vbox],
             beginButton: new Button({
                 text: "Enregistrer",
                 type: "Emphasized",
-                press: async () => {
+                press: () => {
                     const newName = nameInput.getValue().trim();
                     if (!newName) {
                         MessageBox.warning("Le nom ne peut pas être vide.");
@@ -607,14 +769,17 @@ export default class Drive extends Controller {
                     }
 
                     dialog.close();
-                    try {
-                        MessageToast.show("Mise à jour...");
-                        await this.driveService.updateFile(file.id, newName);
-                        MessageToast.show("Fichier renommé avec succès !");
-                        this.onRefresh();
-                    } catch (error: any) {
-                        MessageBox.error("Erreur lors du renommage : " + (error.message || error));
-                    }
+                    void (async () => {
+                        try {
+                            MessageToast.show("Mise à jour du nom...");
+                            await this.driveService.updateFile(file.id, newName);
+                            MessageToast.show("Fichier renommé avec succès !");
+                            this.onRefresh();
+                        } catch (err: unknown) {
+                            const msg = err instanceof Error ? err.message : String(err);
+                            MessageBox.error(`Erreur lors du renommage : ${msg}`);
+                        }
+                    })();
                 }
             }),
             endButton: new Button({
@@ -628,28 +793,28 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Open Update File Content Dialog
+     * Boîte de dialogue pour remplacer le contenu binaire
      */
-    public onOpenUpdateContentDialog(file: DriveFile): void {
+    private openUpdateContentDialog(file: DriveFile): void {
         const fileUploader = new FileUploader({
             width: "100%",
-            placeholder: "Choisissez le nouveau fichier..."
+            placeholder: "Sélectionnez le fichier de remplacement..."
         });
 
         const vbox = new VBox();
         vbox.addStyleClass("sapUiSmallMargin");
-        vbox.addItem(new Label({ text: "Sélectionnez le nouveau contenu :" }));
+        vbox.addItem(new Label({ text: "Sélectionnez le nouveau fichier binaire :" }));
         vbox.addItem(fileUploader);
 
         const dialog = new Dialog({
-            title: "Remplacer le contenu du fichier",
+            title: "Remplacer le Contenu",
             content: [vbox],
             beginButton: new Button({
                 text: "Remplacer",
                 type: "Emphasized",
-                press: async () => {
-                    const domRef = fileUploader.getFocusDomRef() as HTMLInputElement;
-                    const files = domRef ? domRef.files : null;
+                press: () => {
+                    const domRef = fileUploader.getFocusDomRef() as HTMLInputElement | null;
+                    const files = domRef?.files;
 
                     if (!files || files.length === 0) {
                         MessageBox.warning("Veuillez sélectionner un fichier.");
@@ -659,14 +824,17 @@ export default class Drive extends Controller {
                     const newFile = files[0];
                     dialog.close();
 
-                    try {
-                        MessageToast.show("Mise à jour du contenu...");
-                        await this.driveService.updateFile(file.id, file.name, newFile);
-                        MessageToast.show("Contenu mis à jour avec succès !");
-                        this.onRefresh();
-                    } catch (error: any) {
-                        MessageBox.error("Erreur de mise à jour : " + (error.message || error));
-                    }
+                    void (async () => {
+                        try {
+                            MessageToast.show("Remplacement du fichier...");
+                            await this.driveService.updateFile(file.id, file.name, newFile);
+                            MessageToast.show("Contenu mis à jour avec succès !");
+                            this.onRefresh();
+                        } catch (err: unknown) {
+                            const msg = err instanceof Error ? err.message : String(err);
+                            MessageBox.error(`Erreur de mise à jour : ${msg}`);
+                        }
+                    })();
                 }
             }),
             endButton: new Button({
@@ -680,142 +848,28 @@ export default class Drive extends Controller {
     }
 
     /**
-     * Delete File
+     * Suppression d'un document après confirmation
      */
-    public onDeleteFile(file: DriveFile): void {
+    private deleteFileAction(file: DriveFile): void {
         MessageBox.confirm(`Voulez-vous vraiment supprimer "${file.name}" ?`, {
             title: "Confirmation de suppression",
             actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
             emphasizedAction: MessageBox.Action.OK,
             onClose: (action: string | null) => {
                 if (action === MessageBox.Action.OK) {
-                    MessageToast.show("Suppression...");
-                    this.driveService.deleteFile(file.id)
+                    MessageToast.show("Suppression en cours...");
+                    this.driveService
+                        .deleteFile(file.id)
                         .then(() => {
-                            MessageToast.show("Fichier supprimé !");
+                            MessageToast.show("Élément supprimé avec succès !");
                             this.onRefresh();
                         })
-                        .catch((error: any) => {
-                            MessageBox.error("Erreur de suppression : " + (error.message || error));
+                        .catch((error: unknown) => {
+                            const msg = error instanceof Error ? error.message : String(error);
+                            MessageBox.error(`Erreur lors de la suppression : ${msg}`);
                         });
                 }
             }
         });
-    }
-
-    /**
-     * Formatters
-     */
-    public formatFileSize(bytes?: number | null): string {
-        if (bytes === null || bytes === undefined) {
-            return "-";
-        }
-        if (bytes === 0) return "0 Octets";
-        const k = 1024;
-        const sizes = ["Octets", "Ko", "Mo", "Go"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    }
-
-    public formatDate(dateStr?: string): string {
-        if (!dateStr) return "-";
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleString();
-        } catch {
-            return dateStr;
-        }
-    }
-
-    /**
-     * File Icon Formatter by extension & mimeType
-     */
-    public formatFileIcon(isFolder?: boolean, mimeType?: string, fileName?: string): string {
-        if (isFolder) {
-            return "sap-icon://folder-blank";
-        }
-        const mime = (mimeType || "").toLowerCase();
-        const ext = (fileName || "").split(".").pop()?.toLowerCase() || "";
-
-        // Archives (ZIP, RAR, 7Z, TAR, GZ)
-        if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(ext) || mime.includes("zip") || mime.includes("compressed") || mime.includes("archive") || mime.includes("tar") || mime.includes("rar")) {
-            return "sap-icon://attachment-zip-file";
-        }
-        // PDF
-        if (ext === "pdf" || mime.includes("pdf")) {
-            return "sap-icon://pdf-attachment";
-        }
-        // Images (PNG, JPG, JPEG, GIF, SVG, WEBP)
-        if (["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"].includes(ext) || mime.includes("image")) {
-            return "sap-icon://attachment-photo";
-        }
-        // Spreadsheets (Excel, CSV)
-        if (["xls", "xlsx", "csv", "ods"].includes(ext) || mime.includes("excel") || mime.includes("spreadsheet") || mime.includes("csv")) {
-            return "sap-icon://excel-attachment";
-        }
-        // Documents (Word, Text, ODT)
-        if (["doc", "docx", "txt", "rtf", "odt"].includes(ext) || mime.includes("word") || mime.includes("document") || mime.includes("text/plain")) {
-            return "sap-icon://document";
-        }
-        // Presentations (PPT, PPTX, ODP)
-        if (["ppt", "pptx", "odp"].includes(ext) || mime.includes("presentation") || mime.includes("powerpoint")) {
-            return "sap-icon://ppt-attachment";
-        }
-        // Audio (MP3, WAV, OGG, AAC, FLAC)
-        if (["mp3", "wav", "ogg", "aac", "flac", "m4a"].includes(ext) || mime.includes("audio")) {
-            return "sap-icon://audio";
-        }
-        // Video (MP4, AVI, MKV, MOV, WEBM)
-        if (["mp4", "avi", "mkv", "mov", "webm", "flv"].includes(ext) || mime.includes("video")) {
-            return "sap-icon://video";
-        }
-        // Code / Scripts (JS, TS, HTML, CSS, JSON, XML, JAVA, PY, SH)
-        if (["js", "ts", "html", "css", "json", "xml", "java", "py", "sh", "groovy"].includes(ext) || mime.includes("json") || mime.includes("javascript") || mime.includes("xml")) {
-            return "sap-icon://developer-settings";
-        }
-
-        return "sap-icon://document-text";
-    }
-
-    /**
-     * File Icon Color Formatter
-     */
-    public formatFileIconColor(isFolder?: boolean, mimeType?: string, fileName?: string): string {
-        if (isFolder) {
-            return "#E89D00";
-        }
-        const mime = (mimeType || "").toLowerCase();
-        const ext = (fileName || "").split(".").pop()?.toLowerCase() || "";
-
-        // Archives (ZIP, RAR) -> Orange/Amber
-        if (["zip", "rar", "7z", "tar", "gz"].includes(ext) || mime.includes("zip") || mime.includes("compressed") || mime.includes("archive") || mime.includes("rar")) {
-            return "#E65100";
-        }
-        // PDF -> Red
-        if (ext === "pdf" || mime.includes("pdf")) {
-            return "#D32F2F";
-        }
-        // Images -> Green
-        if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext) || mime.includes("image")) {
-            return "#388E3C";
-        }
-        // Spreadsheets -> Dark Green
-        if (["xls", "xlsx", "csv"].includes(ext) || mime.includes("excel") || mime.includes("spreadsheet")) {
-            return "#1B5E20";
-        }
-        // Word/Docs -> Blue
-        if (["doc", "docx", "txt"].includes(ext) || mime.includes("word") || mime.includes("document")) {
-            return "#1976D2";
-        }
-        // Presentations -> Deep Orange
-        if (["ppt", "pptx"].includes(ext) || mime.includes("presentation") || mime.includes("powerpoint")) {
-            return "#F57C00";
-        }
-        // Audio/Video -> Purple
-        if (["mp3", "wav", "mp4", "avi", "mkv"].includes(ext) || mime.includes("audio") || mime.includes("video")) {
-            return "#7B1FA2";
-        }
-
-        return "#546E7A";
     }
 }
