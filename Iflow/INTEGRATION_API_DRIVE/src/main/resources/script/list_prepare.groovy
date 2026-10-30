@@ -18,5 +18,7 @@ def processData(message) {
     message.setProperty("startFolderId", readParam("folderId") ?: "")
     // search optionnel : ne garde que les éléments dont le nom contient ce texte
     message.setProperty("searchText", readParam("search") ?: "")
+    // isAll optionnel : 'true' si on veut récupérer tous les fichiers de tout le Drive (pour le dashboard)
+    message.setProperty("isAll", readParam("all") ?: "")
     return message
 }

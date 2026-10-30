@@ -1,6 +1,197 @@
 <mvc:View controllerName="poc.cpi.ral.drivefilemanager.controller.Drive"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
-    <Page id="page" title="{i18n>title}">
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:grid="sap.ui.layout.cssgrid"
+    xmlns:l="sap.ui.layout"
+    xmlns:card="sap.f.cards"
+    xmlns:core="sap.ui.core"
+    xmlns:u="sap.ui.unified">
+    <Page id="page" title="{i18n>title}" titleAlignment="Start">
+        <headerContent>
+            <Button icon="sap-icon://refresh" tooltip="{i18n>btnRefresh}" press=".onRefresh"/>
+        </headerContent>
+        <content>
+            <IconTabBar id="iconTabBar" selectedKey="drive" select=".onTabSelect" expandable="false" applyContentPadding="false">
+                <items>
+                    <IconTabFilter icon="sap-icon://folder-blank" text="{i18n>tabDrive}" key="drive">
+                        <VBox class="sapUiSmallMargin">
+                            <!-- Breadcrumbs / Folder Header Navigation -->
+                            <HBox alignmentBar="true" justifyContent="SpaceBetween" alignItems="Center" class="sapUiTinyMarginBottom">
+                                <Breadcrumbs id="breadcrumbs" currentLocationText="{i18n>rootFolderName}">
+                                </Breadcrumbs>
+                                <HBox>
+                                    <Button id="btnUp" icon="sap-icon://navigation-up-arrow" text="{i18n>btnBackToParent}" press=".onNavUp" enabled="false" class="sapUiTinyMarginEnd"/>
+                                    <Button icon="sap-icon://upload" text="{i18n>btnUpload}" type="Emphasized" press=".onOpenUploadDialog"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- Search & Display Mode Toolbar -->
+                            <OverflowToolbar class="sapUiTinyMarginBottom">
+                                <Title text="Google Drive" level="H2"/>
+                                <ToolbarSpacer/>
+                                <SearchField id="searchField" width="30%" placeholder="{i18n>toolbarSearchPlaceholder}" search=".onSearchLive" liveChange=".onSearchLive"/>
+                                <Select id="sortSelect" icon="sap-icon://sort" change=".onSortSelect" tooltip="Trier par">
+                                    <core:Item key="nameAsc" text="Nom (A-Z)"/>
+                                    <core:Item key="nameDesc" text="Nom (Z-A)"/>
+                                    <core:Item key="modDesc" text="Date modif (Plus récents)"/>
+                                    <core:Item key="modAsc" text="Date modif (Plus anciens)"/>
+                                    <core:Item key="createdDesc" text="Date création (Plus récents)"/>
+                                    <core:Item key="createdAsc" text="Date création (Plus anciens)"/>
+                                    <core:Item key="sizeDesc" text="Taille (Plus grands)"/>
+                                    <core:Item key="sizeAsc" text="Taille (Plus petits)"/>
+                                </Select>
+                                <SegmentedButton selectedKey="grid" select=".onLayoutChange">
+                                    <items>
+                                        <SegmentedButtonItem icon="sap-icon://grid" key="grid" tooltip="Vue Grille (Drive)"/>
+                                        <SegmentedButtonItem icon="sap-icon://table-view" key="table" tooltip="Vue Tableau"/>
+                                    </items>
+                                </SegmentedButton>
+                            </OverflowToolbar>
+
+                            <!-- GRID / CARD VIEW (Google Drive Style) -->
+                            <VBox id="gridView" visible="true">
+                                <!-- Section Dossiers (Folders Chips/Cards) -->
+                                <Panel headerText="Dossiers" expandable="true" expanded="true" class="sapUiTinyMarginBottom" visible="{= ${drive>/folders}.length > 0 }">
+                                    <FlexBox wrap="Wrap" items="{drive>/folders}">
+                                        <items>
+                                            <CustomListItem type="Active" press=".onFolderPress" class="folderChipItem sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                                                <HBox alignItems="Center" justifyContent="SpaceBetween" class="folderChipBox">
+                                                    <HBox alignItems="Center" class="folderChipTitleBox">
+                                                        <core:Icon src="sap-icon://folder-blank" color="#5E6977" size="1.25rem" class="sapUiTinyMarginEnd"/>
+                                                        <Text text="{drive>name}" maxLines="1" class="folderChipText"/>
+                                                    </HBox>
+                                                    <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet" class="folderChipBtn"/>
+                                                </HBox>
+                                            </CustomListItem>
+                                        </items>
+                                    </FlexBox>
+                                </Panel>
+
+                                <!-- Section Fichiers (File Cards) -->
+                                <Panel headerText="Fichiers" expandable="true" expanded="true" visible="{= ${drive>/filesOnly}.length > 0 }">
+                                    <f:GridList id="filesGridList" items="{drive>/filesOnly}">
+                                        <f:customLayout>
+                                            <grid:GridBoxLayout boxWidth="14rem"/>
+                                        </f:customLayout>
+                                        <f:items>
+                                            <CustomListItem class="fileCardItem">
+                                                <VBox class="fileCardBox">
+                                                    <!-- Header: Type Icon, File Name, and Overflow Menu -->
+                                                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="fileCardHeader">
+                                                        <HBox alignItems="Center" class="fileCardTitleBox">
+                                                            <core:Icon src="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIcon'}"
+                                                                       color="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIconColor'}"
+                                                                       size="1.2rem"
+                                                                       class="sapUiTinyMarginEnd"/>
+                                                            <Text text="{drive>name}" maxLines="1" class="fileCardTitle"/>
+                                                        </HBox>
+                                                        <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet" class="fileCardBtn"/>
+                                                    </HBox>
+
+                                                    <!-- Preview / Thumbnail Box -->
+                                                    <VBox alignItems="Center" justifyContent="Center" class="fileCardPreview">
+                                                        <core:Icon src="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIcon'}"
+                                                                   color="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIconColor'}"
+                                                                   size="3rem"/>
+                                                    </VBox>
+
+                                                    <!-- Footer Info -->
+                                                    <HBox justifyContent="SpaceBetween" class="fileCardFooter">
+                                                        <Text text="{path: 'drive>size', formatter: '.formatFileSize'}" class="fileCardMeta"/>
+                                                        <Text text="{path: 'drive>modifiedTime', formatter: '.formatDate'}" class="fileCardMeta"/>
+                                                    </HBox>
+                                                </VBox>
+                                            </CustomListItem>
+                                        </f:items>
+                                    </f:GridList>
+                                </Panel>
+
+                                <VBox visible="{= ${drive>/folders}.length === 0 &amp;&amp; ${drive>/filesOnly}.length === 0 }" alignItems="Center" justifyContent="Center" class="sapUiLargeMargin">
+                                    <core:Icon src="sap-icon://document" size="3rem" color="#B0BEC5" class="sapUiMediumMarginBottom"/>
+                                    <Text text="Aucun fichier ou dossier trouvé dans ce répertoire." class="sapUiTextMuted"/>
+                                </VBox>
+                            </VBox>
+
+                            <!-- TABLE VIEW (Alternative view mode) -->
+                            <Table id="filesTable"
+                                visible="false"
+                                items="{path: 'drive>/files'}"
+                                noDataText="Aucun fichier trouvé"
+                                growing="true"
+                                growingThreshold="50">
+                                <columns>
+                                    <Column width="3rem" hAlign="Center">
+                                        <Text text="{i18n>colType}"/>
+                                    </Column>
+                                    <Column>
+                                        <Text text="{i18n>colName}"/>
+                                    </Column>
+                                    <Column demandPopin="true" minScreenWidth="Tablet">
+                                        <Text text="{i18n>colSize}"/>
+                                    </Column>
+                                    <Column demandPopin="true" minScreenWidth="Tablet">
+                                        <Text text="{i18n>colModifiedTime}"/>
+                                    </Column>
+                                    <Column width="4rem" hAlign="Center">
+                                        <Text text="{i18n>colActions}"/>
+                                    </Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem type="Active" press=".onItemPress">
+                                        <cells>
+                                            <core:Icon src="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIcon'}"
+                                                       color="{parts: [{path: 'drive>isFolder'}, {path: 'drive>mimeType'}, {path: 'drive>name'}], formatter: '.formatFileIconColor'}"/>
+                                            <ObjectIdentifier title="{drive>name}" text="{drive>id}"/>
+                                            <Text text="{path: 'drive>size', formatter: '.formatFileSize'}"/>
+                                            <Text text="{path: 'drive>modifiedTime', formatter: '.formatDate'}"/>
+                                            <Button icon="sap-icon://overflow" type="Transparent" press=".onOpenActionSheet"/>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </VBox>
+                    </IconTabFilter>
+
+                    <IconTabFilter icon="sap-icon://view" text="{i18n>tabDashboard}" key="dashboard">
+                        <VBox class="sapUiSmallMargin">
+                            <!-- Summary Tiles -->
+                            <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                                <GenericTile class="sapUiTinyMarginEnd sapUiTinyMarginBottom" header="{i18n>dashboardTotalItems}" frameType="OneByOne">
+                                    <TileContent>
+                                        <NumericContent value="{stats>/totalItems}" icon="sap-icon://documents"/>
+                                    </TileContent>
+                                </GenericTile>
+                                <GenericTile class="sapUiTinyMarginEnd sapUiTinyMarginBottom" header="{i18n>dashboardTotalFiles}" frameType="OneByOne">
+                                    <TileContent>
+                                        <NumericContent value="{stats>/totalFiles}" icon="sap-icon://document" valueColor="Good"/>
+                                    </TileContent>
+                                </GenericTile>
+                                <GenericTile class="sapUiTinyMarginEnd sapUiTinyMarginBottom" header="{i18n>dashboardTotalFolders}" frameType="OneByOne">
+                                    <TileContent>
+                                        <NumericContent value="{stats>/totalFolders}" icon="sap-icon://folder-blank" valueColor="Critical"/>
+                                    </TileContent>
+                                </GenericTile>
+                            </HBox>
+
+                            <!-- Charts & Breakdown Cards -->
+                            <l:Grid defaultSpan="XL6 L6 M12 S12">
+                                <Panel headerText="{i18n>dashboardFileTypeDist}" expandable="false" class="sapUiTinyMarginBottom">
+                                    <List items="{stats>/byType}">
+                                        <StandardListItem title="{stats>category}" number="{stats>count}" icon="{stats>icon}"/>
+                                    </List>
+                                </Panel>
+
+                                <Panel headerText="{i18n>dashboardModDateDist}" expandable="false" class="sapUiTinyMarginBottom">
+                                    <List items="{stats>/byDate}">
+                                        <StandardListItem title="{stats>period}" number="{stats>count}" icon="sap-icon://history"/>
+                                    </List>
+                                </Panel>
+                            </l:Grid>
+                        </VBox>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
+        </content>
     </Page>
 </mvc:View>

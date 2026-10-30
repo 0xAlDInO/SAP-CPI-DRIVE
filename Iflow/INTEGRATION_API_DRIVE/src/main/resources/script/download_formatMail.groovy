@@ -65,6 +65,15 @@ def processData(message) {
         fileName = fileName + "." + extByMime[mimeType]
     }
 
+    // Si la requête demande un téléchargement brut (ex: depuis l'application Fiori), on garde le contenu binaire
+    def isRaw = message.getProperty("isRawDownload")
+    if (isRaw && (isRaw.toString().equalsIgnoreCase("true") || isRaw.toString().equalsIgnoreCase("1"))) {
+        message.setBody(fileContent)
+        message.setHeader("Content-Type", mimeType)
+        message.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+        return message
+    }
+
     // Pièce jointe : reprise ensuite par l'adaptateur Mail (Add Message Attachments)
     def dataSource = new ByteArrayDataSource(fileContent, mimeType)
     message.getAttachments().put(fileName, new DataHandler(dataSource))

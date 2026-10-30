@@ -1,0 +1,13 @@
+{
+  "name": "sap-cpi-drive",
+  "version": "1.0.0",
+  "description": "SAP Fiori application (SAPUI5) for Google Drive management via SAP CPI",
+  "scripts": {
+    "start": "npm --prefix drive-file-manager run start",
+    "start-local": "npm --prefix drive-file-manager run start-local",
+    "start-noflp": "npm --prefix drive-file-manager run start-noflp",
+    "build": "npm --prefix drive-file-manager run build",
+    "lint": "npm --prefix drive-file-manager run lint",
+    "ts-typecheck": "npm --prefix drive-file-manager run ts-typecheck"
+  }
+}
